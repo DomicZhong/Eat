@@ -15,13 +15,16 @@ import { record, checkRecent } from "../utils/history.js";
 /** 在一起的日子（零点开始） */
 const ANNIVERSARY = new Date("2023-10-28T01:03:02");
 
-/** 分类配置 */
+/** 主分类配置 */
 const CATEGORIES = [
   { key: "food", label: "吃什么", emoji: "🍽️", color: "btn-rose" },
   { key: "activity", label: "做什么", emoji: "🎯", color: "btn-emerald" },
   { key: "reward", label: "奖励", emoji: "🎁", color: "btn-emerald" },
   { key: "relationship", label: "情感", emoji: "💝", color: "btn-rose" },
 ];
+
+/** 私密奖励（不参与 Random All） */
+const PRIVATE_CATEGORY = { key: "private", label: "私密", emoji: "🔥", color: "btn-violet" };
 
 /** 当前展示的结果状态（用于重抽和复制） */
 let currentResult = { text: "", category: null, value: null };
@@ -82,9 +85,20 @@ const html = () => `
       </button>
     </div>
 
-    <!-- 分类按钮 (2x2 Grid) -->
+    <!-- 分类按钮 (3+2 布局) -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+      ${CATEGORIES.slice(0, 3).map((c) => `
+        <button
+          id="decider-btn-${c.key}"
+          class="${c.color} rounded-xl px-3 py-5 text-base font-semibold shadow-lg active:scale-95 transition-transform"
+          data-category="${c.key}"
+        >
+          ${c.emoji} ${c.label}
+        </button>
+      `).join("")}
+    </div>
     <div class="grid grid-cols-2 gap-3 mb-4">
-      ${CATEGORIES.map((c) => `
+      ${CATEGORIES.slice(3, 4).map((c) => `
         <button
           id="decider-btn-${c.key}"
           class="${c.color} rounded-xl px-4 py-5 text-lg font-semibold shadow-lg active:scale-95 transition-transform"
@@ -93,6 +107,12 @@ const html = () => `
           ${c.emoji} ${c.label}
         </button>
       `).join("")}
+      <button
+        id="decider-btn-private"
+        class="btn-violet rounded-xl px-4 py-5 text-lg font-semibold shadow-lg active:scale-95 transition-transform"
+      >
+        🔥 私密
+      </button>
     </div>
 
     <!-- 全局随机按钮 -->
@@ -182,7 +202,8 @@ const randomPickExcluding = (arr, exclude) => {
 const handleCategory = (category) => {
   const picked = randomPick(options[category]);
   const emoji = categoryEmoji(category);
-  const label = CATEGORIES.find((c) => c.key === category)?.label || category;
+  const allCats = [...CATEGORIES, PRIVATE_CATEGORY];
+  const label = allCats.find((c) => c.key === category)?.label || category;
   record(category, picked);
   updateResult(`${emoji} ${picked}`, `从「${label}」中随机选中`, category, picked);
 };
@@ -195,7 +216,8 @@ const handleCategory = (category) => {
 const handleCategoryReroll = (category, excludeValue) => {
   const picked = randomPickExcluding(options[category], [excludeValue]);
   const emoji = categoryEmoji(category);
-  const label = CATEGORIES.find((c) => c.key === category)?.label || category;
+  const allCats = [...CATEGORIES, PRIVATE_CATEGORY];
+  const label = allCats.find((c) => c.key === category)?.label || category;
   record(category, picked);
   updateResult(`${emoji} ${picked}`, `从「${label}」重抽 · 已排除上次结果`, category, picked);
 };
@@ -288,7 +310,7 @@ const handleReroll = () => {
  * 绑定事件监听器
  */
 const bindEvents = () => {
-  // 分类按钮
+  // 主分类按钮
   CATEGORIES.forEach((c) => {
     const btn = document.getElementById(`decider-btn-${c.key}`);
     if (btn) {
@@ -296,7 +318,13 @@ const bindEvents = () => {
     }
   });
 
-  // 全局随机按钮
+  // 私密奖励按钮
+  const btnPrivate = document.getElementById("decider-btn-private");
+  if (btnPrivate) {
+    btnPrivate.addEventListener("click", () => handleCategory(PRIVATE_CATEGORY.key));
+  }
+
+  // 全局随机按钮（不包含私密）
   const btnAll = document.getElementById("decider-btn-all");
   if (btnAll) {
     btnAll.addEventListener("click", handleRandomAll);

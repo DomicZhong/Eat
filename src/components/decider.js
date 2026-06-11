@@ -13,7 +13,7 @@ import { options, randomPick, categoryEmoji } from "../utils/helpers.js";
 import { record, checkRecent } from "../utils/history.js";
 
 /** 在一起的日子（零点开始） */
-const ANNIVERSARY = new Date("2023-10-28T01:03:02");
+const ANNIVERSARY = new Date("2023-10-08T01:03:02");
 
 /** 主分类配置 */
 const CATEGORIES = [
@@ -59,7 +59,7 @@ const html = () => `
       <span class="text-slate-400">在一起</span>
       <span id="days-counter" class="font-bold min-w-[9ch] text-center bg-gradient-to-r from-emerald-400 to-rose-400 bg-clip-text text-transparent tabular-nums">${sinceTogether().days} 天 ${sinceTogether().time}</span>
       <span class="text-slate-600">·</span>
-      <span class="text-slate-500 text-xs">始于2023.10.28</span>
+      <span class="text-slate-500 text-xs">始于2023.10.08</span>
     </div>
 
     <h1 class="text-2xl font-bold text-center mb-6 tracking-wide">

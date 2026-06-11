@@ -2,22 +2,22 @@
 
 /* ===== 全局基础样式 ===== */
 body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Cormorant Garamond", "Noto Serif SC", serif;
 }
 
-/* ===== 自定义滚动条 (工业暗黑风) ===== */
+/* ===== 自定义滚动条 (浅白风) ===== */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-slate-950);
+  background: #f1f1f1;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-slate-700);
+  background: #c0c0c0;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-600);
+  background: #a8a8a8;
 }
 
 /* ===== 页面过渡动画 ===== */
@@ -37,27 +37,33 @@ body {
 
 /* ===== 自定义工具类 ===== */
 .btn-emerald {
-  background-color: var(--color-emerald-600);
-  color: var(--color-slate-100);
-  transition: background-color 0.15s;
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #d1d5db;
+  transition: all 0.15s;
 }
 .btn-emerald:hover {
-  background-color: var(--color-emerald-500);
+  background-color: #f0fdf4;
+  border-color: #86efac;
 }
 .btn-emerald:active {
-  background-color: var(--color-emerald-700);
+  background-color: #dcfce7;
+  border-color: #4ade80;
 }
 
 .btn-rose {
-  background-color: var(--color-rose-600);
-  color: var(--color-slate-100);
-  transition: background-color 0.15s;
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #d1d5db;
+  transition: all 0.15s;
 }
 .btn-rose:hover {
-  background-color: var(--color-rose-500);
+  background-color: #fff1f2;
+  border-color: #fda4af;
 }
 .btn-rose:active {
-  background-color: var(--color-rose-700);
+  background-color: #ffe4e6;
+  border-color: #fb7185;
 }
 
 .btn-violet {

@@ -59,7 +59,7 @@ const html = () => `
       <span class="text-slate-400">在一起</span>
       <span id="days-counter" class="font-bold min-w-[9ch] text-center bg-gradient-to-r from-emerald-400 to-rose-400 bg-clip-text text-transparent tabular-nums">${sinceTogether().days} 天 ${sinceTogether().time}</span>
       <span class="text-slate-600">·</span>
-      <span class="text-slate-500 text-xs">始于2023.10.08</span>
+      <span class="text-slate-500 text-xs">始于2023.10.8</span>
     </div>
 
     <h1 class="text-2xl font-bold text-center mb-6 tracking-wide">
@@ -134,23 +134,6 @@ const bounceResult = () => {
   el.classList.remove("result-bounce");
   void el.offsetWidth;
   el.classList.add("result-bounce");
-};
-
-/**
- * 检查并显示历史重复提示
- * @param {string} category
- * @param {string} value
- */
-const showHistoryHint = (category, value) => {
-  const hintEl = document.getElementById("decider-result-hint");
-  if (!hintEl) return;
-  const { count, lastDate } = checkRecent(category, value);
-  if (count > 0) {
-    hintEl.textContent = `⚠️ 最近${lastDate}已选过"${value}"（7天内共${count}次）`;
-    hintEl.classList.remove("hidden");
-  } else {
-    hintEl.classList.add("hidden");
-  }
 };
 
 /**

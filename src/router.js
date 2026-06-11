@@ -11,6 +11,7 @@ const routes = {
   decider: () => import("./components/decider.js"),
   jar: () => import("./components/jar.js"),
   quests: () => import("./components/quests.js"),
+  anniversary: () => import("./components/anniversary.js"),
 };
 
 /** 页面标题映射 */
@@ -18,6 +19,7 @@ const titles = {
   decider: "🎲 UsTime · 扭蛋机",
   jar: "🏺 UsTime · 漂流瓶",
   quests: "📋 UsTime · 小本本",
+  anniversary: "💕 UsTime · 纪念日",
 };
 
 /** 默认路由（首页重定向） */

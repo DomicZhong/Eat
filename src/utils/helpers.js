@@ -144,6 +144,24 @@ export const randomAll = () => {
  * @param {string} category - 类别名
  * @returns {string} emoji
  */
+/** 在一起的日子（零点开始） */
+export const ANNIVERSARY = new Date("2023-10-08T01:03:02");
+
+/**
+ * 计算在一起的时间（天 + HH:MM:SS），营造时间流动感
+ * @returns {{ days: number, time: string }} 如 { days: 976, time: "14:32:07" }
+ */
+export const sinceTogether = () => {
+  const diff = Date.now() - ANNIVERSARY.getTime();
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const remain = totalSec % 86400;
+  const h = Math.floor(remain / 3600);
+  const m = Math.floor((remain % 3600) / 60);
+  const s = remain % 60;
+  return { days, time: `${h}时${m}分${s}秒` };
+};
+
 export const categoryEmoji = (category) => {
   const map = {
     food: "🍽️",

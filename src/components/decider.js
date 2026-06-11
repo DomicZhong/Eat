@@ -2,18 +2,14 @@
  * 随机决策器 (The Decider) — 核心功能组件
  *
  * UI 结构:
- * - 纪念日倒计时
  * - 结果展示区 + 重抽/复制按钮
- * - 4 个分类按钮 (2x2 Grid)
+ * - 5 个分类按钮 (3+2 Grid)
  * - 全局随机按钮
  *
- * 特性: 7天历史防重复提示、快速重抽(排除当前)、一键复制、纪念日计数
+ * 特性: 7天历史防重复提示、快速重抽(排除当前)、一键复制
  */
 import { options, randomPick, categoryEmoji } from "../utils/helpers.js";
 import { record, checkRecent } from "../utils/history.js";
-
-/** 在一起的日子（零点开始） */
-const ANNIVERSARY = new Date("2023-10-08T01:03:02");
 
 /** 主分类配置 */
 const CATEGORIES = [
@@ -27,25 +23,7 @@ const CATEGORIES = [
 const PRIVATE_CATEGORY = { key: "private", label: "私密", emoji: "🔥", color: "btn-violet" };
 
 /** 当前展示的结果状态（用于重抽和复制） */
-let currentResult = { text: "", category: null, value: null };
-
-/**
- * 计算在一起的时间（天 + HH:MM:SS），营造时间流动感
- * @returns {{ days: number, time: string }} 如 { days: 976, time: "14:32:07" }
- */
-const sinceTogether = () => {
-  const diff = Date.now() - ANNIVERSARY.getTime();
-  const totalSec = Math.floor(diff / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const remain = totalSec % 86400;
-  const h = Math.floor(remain / 3600);
-  const m = Math.floor((remain % 3600) / 60);
-  const s = remain % 60;
-  return { days, time: `${h}时${m}分${s}秒` };
-};
-
-/** 计时器 ID，用于销毁 */
-let tickTimer = null;
+let currentResult = { text: "", category: null, value: null, rawText: "", lastAll: null };
 
 /**
  * 构建 Decider 组件的 HTML 结构
@@ -53,55 +31,46 @@ let tickTimer = null;
  */
 const html = () => `
   <div class="page-enter">
-    <!-- 纪念日倒计时（单行，天数 + 时:分:秒 流动） -->
-    <div class="mb-6 flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm">
-      <span>💕</span>
-      <span class="text-slate-400">在一起</span>
-      <span id="days-counter" class="font-bold min-w-[9ch] text-center bg-gradient-to-r from-emerald-400 to-rose-400 bg-clip-text text-transparent tabular-nums">${sinceTogether().days} 天 ${sinceTogether().time}</span>
-      <span class="text-slate-600">·</span>
-      <span class="text-slate-500 text-xs">始于2023.10.8</span>
-    </div>
-
-    <h1 class="text-2xl font-bold text-center mb-6 tracking-wide">
+    <h1 class="text-2xl font-bold text-center mb-4 tracking-wide">
       🎲 <span class="text-emerald-400">Us</span><span class="text-rose-400">Time</span>
     </h1>
 
-    <!-- 结果展示区 -->
-    <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-center min-h-[130px] flex flex-col items-center justify-center">
-      <p id="decider-result-text" class="text-xl leading-relaxed text-slate-200">
+    <!-- 结果展示区（固定最小高度，避免文本长短跳动） -->
+    <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-center min-h-[120px] flex flex-col items-center justify-center">
+      <p id="decider-result-text" class="text-base leading-relaxed text-slate-200">
         点击下方按钮开始随机决策 🎯
       </p>
-      <p id="decider-result-sub" class="mt-2 text-sm text-slate-500 hidden"></p>
-      <p id="decider-result-hint" class="mt-2 text-xs text-amber-400 hidden"></p>
+      <p id="decider-result-sub" class="mt-1 text-xs text-slate-500 hidden"></p>
+      <p id="decider-result-hint" class="mt-1 text-xs text-amber-400 hidden"></p>
     </div>
 
     <!-- 结果操作按钮（重抽 + 复制） -->
     <div id="decider-actions" class="mb-6 flex justify-center gap-3 hidden">
-      <button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
+      <button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
         🔄 换一个
       </button>
-      <button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
+      <button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
         📋 复制
       </button>
     </div>
 
     <!-- 分类按钮 (3+2 布局) -->
-    <div class="grid grid-cols-3 gap-3 mb-3">
+    <div class="grid grid-cols-3 gap-2 mb-2">
       ${CATEGORIES.slice(0, 3).map((c) => `
         <button
           id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-3 py-5 text-base font-semibold shadow-lg active:scale-95 transition-transform"
+          class="${c.color} rounded-xl px-2 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
           data-category="${c.key}"
         >
           ${c.emoji} ${c.label}
         </button>
       `).join("")}
     </div>
-    <div class="grid grid-cols-2 gap-3 mb-4">
+    <div class="grid grid-cols-2 gap-2 mb-3">
       ${CATEGORIES.slice(3, 4).map((c) => `
         <button
           id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-4 py-5 text-lg font-semibold shadow-lg active:scale-95 transition-transform"
+          class="${c.color} rounded-xl px-3 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
           data-category="${c.key}"
         >
           ${c.emoji} ${c.label}
@@ -109,7 +78,7 @@ const html = () => `
       `).join("")}
       <button
         id="decider-btn-private"
-        class="btn-violet rounded-xl px-4 py-5 text-lg font-semibold shadow-lg active:scale-95 transition-transform"
+        class="btn-violet rounded-xl px-3 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
       >
         🔥 私密
       </button>
@@ -118,7 +87,7 @@ const html = () => `
     <!-- 全局随机按钮 -->
     <button
       id="decider-btn-all"
-      class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-rose-600 px-6 py-4 text-xl font-bold text-white shadow-lg hover:from-emerald-500 hover:to-rose-500 active:scale-[0.98] transition-all"
+      class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-rose-600 px-4 py-2.5 text-base font-bold text-white shadow-lg hover:from-emerald-500 hover:to-rose-500 active:scale-[0.98] transition-all"
     >
       🎲 Random All
     </button>
@@ -146,20 +115,21 @@ const showActions = () => {
 
 /**
  * 更新结果展示区
- * @param {string} text - 主文本
+ * @param {string} html - 主文本（支持 HTML）
  * @param {string} [sub] - 副标题
  * @param {string|null} [category] - 类别
  * @param {string|null} [value] - 选中的值
+ * @param {string} [rawText] - 纯文本版（用于复制）
  */
-const updateResult = (text, sub = "", category = null, value = null) => {
+const updateResult = (html, sub = "", category = null, value = null, rawText = "") => {
   const main = document.getElementById("decider-result-text");
   const secondary = document.getElementById("decider-result-sub");
-  if (main) main.textContent = text;
+  if (main) main.innerHTML = html;
   if (secondary) {
     secondary.textContent = sub;
     secondary.classList.toggle("hidden", !sub);
   }
-  currentResult = { text, category, value };
+  currentResult = { text: html, category, value, rawText };
   showActions();
   bounceResult();
   if (category && value) showHistoryHint(category, value);
@@ -218,39 +188,37 @@ const handleRandomAll = () => {
   record("reward", reward);
   record("relationship", relationship);
 
-  const text = `今晚：${food}，之后：${activity}，结束：${reward}。别忘了——${relationship}。`;
-  updateResult(text, "一键随机全局决策", "all", null);
+  const htmlText = `<span>🍽️ ${food}</span><br><span>🎯 ${activity}</span><br><span>🎁 ${reward}</span><br><span>💝 ${relationship}</span>`;
+  const plainText = `${food}，${activity}，${reward}，${relationship}`;
+  currentResult.lastAll = { food, activity, reward, relationship };
+  updateResult(htmlText, "一键随机全局决策", "all", null, plainText);
 };
 
 /**
  * 全局重抽（每个类别排除当前值）
  */
 const handleRandomAllReroll = () => {
-  // 解析上一次的全局结果，提取各类别的值
-  const prev = currentResult.text || "";
-  const foodMatch = prev.match(/今晚：(.+?)，之后/);
-  const actMatch = prev.match(/之后：(.+?)，结束/);
-  const rwdMatch = prev.match(/结束：(.+?)。别忘了/);
-  const relMatch = prev.match(/别忘了——(.+?)。?$/);
-
-  const food = randomPickExcluding(options.food, foodMatch ? [foodMatch[1]] : []);
-  const activity = randomPickExcluding(options.activity, actMatch ? [actMatch[1]] : []);
-  const reward = randomPickExcluding(options.reward, rwdMatch ? [rwdMatch[1]] : []);
-  const relationship = randomPickExcluding(options.relationship, relMatch ? [relMatch[1]] : []);
+  const last = currentResult.lastAll;
+  const food = randomPickExcluding(options.food, last ? [last.food] : []);
+  const activity = randomPickExcluding(options.activity, last ? [last.activity] : []);
+  const reward = randomPickExcluding(options.reward, last ? [last.reward] : []);
+  const relationship = randomPickExcluding(options.relationship, last ? [last.relationship] : []);
   record("food", food);
   record("activity", activity);
   record("reward", reward);
   record("relationship", relationship);
 
-  const text = `今晚：${food}，之后：${activity}，结束：${reward}。别忘了——${relationship}。`;
-  updateResult(text, "重抽 · 已排除上次各选项", "all", null);
+  const htmlText = `<span>🍽️ ${food}</span><br><span>🎯 ${activity}</span><br><span>🎁 ${reward}</span><br><span>💝 ${relationship}</span>`;
+  const plainText = `${food}，${activity}，${reward}，${relationship}`;
+  currentResult.lastAll = { food, activity, reward, relationship };
+  updateResult(htmlText, "重抽 · 已排除上次各选项", "all", null, plainText);
 };
 
 /**
  * 复制结果到剪贴板
  */
 const handleCopy = async () => {
-  const text = currentResult.text || "";
+  const text = currentResult.rawText || currentResult.text || "";
   if (!text) return;
 
   try {
@@ -327,26 +295,11 @@ const bindEvents = () => {
 };
 
 /**
- * 启动纪念日计时器（每秒刷新天数 + 时分秒）
- */
-const startTicker = () => {
-  if (tickTimer) clearInterval(tickTimer);
-  tickTimer = setInterval(() => {
-    const el = document.getElementById("days-counter");
-    if (el) {
-      const { days, time } = sinceTogether();
-      el.textContent = `${days} 天 ${time}`;
-    }
-  }, 1000);
-};
-
-/**
  * 渲染 Decider 组件到目标容器
  * @param {HTMLElement} container - 挂载目标
  */
 export const render = (container) => {
-  currentResult = { text: "", category: null, value: null };
+  currentResult = { text: "", category: null, value: null, rawText: "", lastAll: null };
   container.innerHTML = html();
   bindEvents();
-  startTicker();
 };

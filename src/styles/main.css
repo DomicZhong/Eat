@@ -5,19 +5,19 @@ body {
   font-family: "Cormorant Garamond", "Noto Serif SC", serif;
 }
 
-/* ===== 自定义滚动条 (浅白风) ===== */
+/* ===== 自定义滚动条 (深色工业风) ===== */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #1e293b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
+  background: #475569;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #64748b;
 }
 
 /* ===== 页面过渡动画 ===== */
@@ -37,45 +37,48 @@ body {
 
 /* ===== 自定义工具类 ===== */
 .btn-emerald {
-  background-color: #ffffff;
-  color: #1e293b;
-  border: 1px solid #d1d5db;
+  background-color: #065f46;
+  color: #d1fae5;
+  border: 1px solid #047857;
   transition: all 0.15s;
 }
 .btn-emerald:hover {
-  background-color: #f0fdf4;
-  border-color: #86efac;
+  background-color: #047857;
+  border-color: #059669;
 }
 .btn-emerald:active {
-  background-color: #dcfce7;
-  border-color: #4ade80;
+  background-color: #064e3b;
+  border-color: #10b981;
 }
 
 .btn-rose {
-  background-color: #ffffff;
-  color: #1e293b;
-  border: 1px solid #d1d5db;
+  background-color: #9f1239;
+  color: #fce7f3;
+  border: 1px solid #be123c;
   transition: all 0.15s;
 }
 .btn-rose:hover {
-  background-color: #fff1f2;
-  border-color: #fda4af;
+  background-color: #be123c;
+  border-color: #e11d48;
 }
 .btn-rose:active {
-  background-color: #ffe4e6;
-  border-color: #fb7185;
+  background-color: #881337;
+  border-color: #f43f5e;
 }
 
 .btn-violet {
-  background-color: var(--color-violet-600);
-  color: var(--color-slate-100);
-  transition: background-color 0.15s;
+  background-color: #5b21b6;
+  color: #ede9fe;
+  border: 1px solid #6d28d9;
+  transition: all 0.15s;
 }
 .btn-violet:hover {
-  background-color: var(--color-violet-500);
+  background-color: #6d28d9;
+  border-color: #7c3aed;
 }
 .btn-violet:active {
-  background-color: var(--color-violet-700);
+  background-color: #4c1d95;
+  border-color: #8b5cf6;
 }
 
 /* ===== 导航高亮 ===== */

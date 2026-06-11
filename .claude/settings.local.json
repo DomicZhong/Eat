@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"dir /a d:\\\\Personal\\\\Code\\\\ISTP\")",
+      "WebSearch",
+      "Bash(npm run *)"
+    ]
+  }
+}

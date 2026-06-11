@@ -1,0 +1,19 @@
+{
+  "name": "ustime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UsTime — 消除决策疲劳，增强情感连接的静态 SPA",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

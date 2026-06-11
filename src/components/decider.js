@@ -36,8 +36,8 @@ const html = () => `
     </h1>
 
     <!-- 结果展示区（固定最小高度，避免文本长短跳动） -->
-    <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-center min-h-[120px] flex flex-col items-center justify-center">
-      <p id="decider-result-text" class="text-base leading-relaxed text-slate-200">
+    <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-center min-h-[144px] flex flex-col items-center justify-center">
+      <p id="decider-result-text" class="text-xl leading-relaxed text-slate-200">
         点击下方按钮开始随机决策 🎯
       </p>
       <p id="decider-result-sub" class="mt-1 text-xs text-slate-500 hidden"></p>
@@ -46,10 +46,10 @@ const html = () => `
 
     <!-- 结果操作按钮（重抽 + 复制） -->
     <div id="decider-actions" class="mb-6 flex justify-center gap-3 hidden">
-      <button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
+      <button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
         🔄 换一个
       </button>
-      <button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
+      <button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
         📋 复制
       </button>
     </div>
@@ -59,7 +59,7 @@ const html = () => `
       ${CATEGORIES.slice(0, 3).map((c) => `
         <button
           id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-2 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
+          class="${c.color} rounded-xl px-2 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
           data-category="${c.key}"
         >
           ${c.emoji} ${c.label}
@@ -70,7 +70,7 @@ const html = () => `
       ${CATEGORIES.slice(3, 4).map((c) => `
         <button
           id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-3 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
+          class="${c.color} rounded-xl px-3 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
           data-category="${c.key}"
         >
           ${c.emoji} ${c.label}
@@ -78,7 +78,7 @@ const html = () => `
       `).join("")}
       <button
         id="decider-btn-private"
-        class="btn-violet rounded-xl px-3 py-2.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
+        class="btn-violet rounded-xl px-3 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
       >
         🔥 私密
       </button>
@@ -87,7 +87,7 @@ const html = () => `
     <!-- 全局随机按钮 -->
     <button
       id="decider-btn-all"
-      class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-rose-600 px-4 py-2.5 text-base font-bold text-white shadow-lg hover:from-emerald-500 hover:to-rose-500 active:scale-[0.98] transition-all"
+      class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-rose-600 px-4 py-3.5 text-base font-bold text-white shadow-lg hover:from-emerald-500 hover:to-rose-500 active:scale-[0.98] transition-all"
     >
       🎲 Random All
     </button>

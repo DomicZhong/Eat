@@ -15,9 +15,9 @@ const routes = {
 
 /** 页面标题映射 */
 const titles = {
-  decider: "🎲 UsTime · 决策",
-  jar: "🏺 UsTime · 储蓄罐",
-  quests: "📋 UsTime · 清单",
+  decider: "🎲 UsTime · 扭蛋机",
+  jar: "🏺 UsTime · 漂流瓶",
+  quests: "📋 UsTime · 小本本",
 };
 
 /** 默认路由（首页重定向） */

@@ -3,7 +3,14 @@
     "allow": [
       "Bash(cmd /c \"dir /a d:\\\\Personal\\\\Code\\\\ISTP\")",
       "WebSearch",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" add README.md)",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Update README with full feature docs\")",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" push origin main)",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" add -A)",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Add private rewards category + merge user's intimate options\")"
     ]
   }
 }

@@ -66,6 +66,18 @@ body {
   border-color: #fb7185;
 }
 
+.btn-violet {
+  background-color: var(--color-violet-600);
+  color: var(--color-slate-100);
+  transition: background-color 0.15s;
+}
+.btn-violet:hover {
+  background-color: var(--color-violet-500);
+}
+.btn-violet:active {
+  background-color: var(--color-violet-700);
+}
+
 /* ===== 导航高亮 ===== */
 .nav-link {
   color: var(--color-slate-400);

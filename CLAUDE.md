@@ -44,6 +44,7 @@ ustime/
 │   │   ├── jar.js                 # Memory jar (save & retrieve notes)
 │   │   ├── quests.js              # Collaborative quest/task list
 │   │   ├── travel.js              # Travel map (Leaflet + timeline)
+│   │   ├── lock.js                # Password lock screen (SHA-256)
 │   │   └── settings.js            # Data management + theme switch + editing
 │   ├── styles/main.css            # Tailwind directives + theme CSS variables + animations
 │   ├── utils/helpers.js           # Data sources (food, activity, reward, relationship, travels) + utility functions
@@ -59,7 +60,7 @@ ustime/
 ## Architecture
 
 - **Entry**: `index.html` loads `src/main.js` as an ES module. `main.js` initializes the hash router and mounts the current page component. Bottom nav has 6 tabs: 决策, 储蓄罐, 清单, 纪念日, 旅行, 数据.
-- **Routing**: `src/router.js` listens for `hashchange` and renders the matching component into the app shell. No library — manual `window.location.hash` parsing. Dynamic import for code splitting. Travel page auto-widens container (`md:max-w-none`) on desktop.
+- **Routing**: `src/router.js` listens for `hashchange` and renders the matching component into the app shell. No library — manual `window.location.hash` parsing. Dynamic import for code splitting. Travel page auto-widens container (`md:max-w-none`) on desktop. Password lock screen (`lock.js`) gates all access before first render.
 - **Data flow**: Components read/write through `src/store.js` (a thin LocalStorage wrapper). Source data (food, activities, travels, etc.) lives in `src/utils/helpers.js` as exported constants with fallback-to-defaults pattern.
 - **Styling**: Tailwind v4 via `src/styles/main.css`. Three themes via CSS variables: 🌙 night (dark), 🌸 sakura (light warm), 🌿 forest (dark green). Emerald/rose accent colors for ISTP/ISFJ.
 

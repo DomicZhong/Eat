@@ -189,15 +189,32 @@ export const randomAll = () => {
  * @param {string} category - 类别名
  * @returns {string} emoji
  */
-/** 在一起的日子（零点开始） */
-export const ANNIVERSARY = new Date("2023-10-08T01:03:02");
+/** 纪念日存储 key */
+const ANNIVERSARY_KEY = "anniversaries";
+
+/** 默认纪念日 */
+const DEFAULT_ANNIVERSARIES = [
+  { id: "1", name: "在一起", date: "2023-10-08T01:03:02" },
+];
 
 /**
- * 计算在一起的时间（天 + HH:MM:SS），营造时间流动感
- * @returns {{ days: number, time: string }} 如 { days: 976, time: "14:32:07" }
+ * 获取所有纪念日列表
+ * @returns {Array<{ id: string, name: string, date: string }>}
  */
-export const sinceTogether = () => {
-  const diff = Date.now() - ANNIVERSARY.getTime();
+export const getAnniversaries = () => {
+  const saved = load(ANNIVERSARY_KEY, null);
+  if (Array.isArray(saved) && saved.length > 0) return saved;
+  return [...DEFAULT_ANNIVERSARIES];
+};
+
+/**
+ * 计算从某个日期到现在的时间
+ * @param {string} dateStr - ISO 日期字符串 "2023-10-08T01:03:02"
+ * @returns {{ days: number, time: string }}
+ */
+export const sinceDate = (dateStr) => {
+  const start = new Date(dateStr).getTime();
+  const diff = Date.now() - start;
   const totalSec = Math.floor(diff / 1000);
   const days = Math.floor(totalSec / 86400);
   const remain = totalSec % 86400;
@@ -208,10 +225,43 @@ export const sinceTogether = () => {
 };
 
 /**
+ * 计算在一起的时间（默认取第一个纪念日）
+ * @returns {{ days: number, time: string }}
+ */
+export const sinceTogether = () => {
+  const anniversaries = getAnniversaries();
+  const main = anniversaries[0] || DEFAULT_ANNIVERSARIES[0];
+  return sinceDate(main.date);
+};
+
+/**
+ * 格式化日期为展示文本
+ * @param {string} dateStr
+ * @returns {string} "2023.10.08"
+ */
+export const formatAnniversaryDate = (dateStr) => {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/**
+ * 格式化日期为详细展示
+ * @param {string} dateStr
+ * @returns {string} "2023.10.08 凌晨 01:03:02"
+ */
+export const formatAnniversaryDateFull = (dateStr) => {
+  const d = new Date(dateStr);
+  const pad = (n) => String(n).padStart(2, "0");
+  const date = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${date} ${time}`;
+};
+
+/**
  * 特殊天数配置（天数 → 提示文案 + emoji）
  */
 const SPECIAL_DAYS = {
-  100: { emoji: "💯", text: "在一起 100 天啦！" },
+  100: { emoji: "💯", text: "100 天啦！" },
   200: { emoji: "💕", text: "200 天，越来越懂彼此" },
   300: { emoji: "🌟", text: "300 天的默契与陪伴" },
   365: { emoji: "🎂", text: "一周年！365 天快乐" },
@@ -225,6 +275,7 @@ const SPECIAL_DAYS = {
   800: { emoji: "💎", text: "800 天，坚如磐石" },
   888: { emoji: "🧧", text: "888 天，发发发！" },
   900: { emoji: "🎯", text: "900 天，长长久久" },
+  978: { emoji: "👑", text: "978 天，久栖吧" },
   999: { emoji: "👑", text: "999 天，天长地久" },
   1000: { emoji: "🏆", text: "1000 天！里程碑达成" },
   1095: { emoji: "🎉", text: "三周年！1095 天" },
@@ -232,7 +283,7 @@ const SPECIAL_DAYS = {
 };
 
 /**
- * 检查今天是否为特殊纪念日（整百天、520、周年等）
+ * 检查今天是否为特殊纪念日（取第一个纪念日的天数）
  * @returns {{ emoji: string, text: string } | null} 特殊天数信息，或 null
  */
 export const getSpecialDay = () => {

@@ -8,7 +8,7 @@
  * 支持 JSON 导出/导入备份，以及一键清空（需二次确认）。
  */
 import { load, remove, save } from "../store.js";
-import { getOptions } from "../utils/helpers.js";
+import { getOptions, getAnniversaries, formatAnniversaryDateFull } from "../utils/helpers.js";
 import { getTheme, setTheme, getThemeList } from "../main.js";
 
 /** 决策选项类别配置 */
@@ -27,8 +27,11 @@ const DATA_KEYS = [
   { key: "decision_history", label: "决策历史", icon: "🎲" },
 ];
 
+/** 纪念日存储 key */
+const ANNIVERSARY_KEY = "anniversaries";
+
 /** 所有需要导出/清空的键 */
-const ALL_KEYS = [...DATA_KEYS.map((d) => d.key), "options", "jar_seen", "quests_counter"];
+const ALL_KEYS = [...DATA_KEYS.map((d) => d.key), "options", "jar_seen", "quests_counter", "anniversaries"];
 
 /** 展开状态 */
 let expandedKey = null;
@@ -126,7 +129,49 @@ const renderOptionDetail = (key, items) => `
         <button class="settings-add-option-btn rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 active:scale-95 transition-all whitespace-nowrap" data-cat="${key}">+ 添加</button>
       </div>
     </div>
-  </div>`;
+    </div>`;
+
+/**
+ * 渲染纪念日编辑区域
+ * @returns {string}
+ */
+const renderAnniversarySection = () => {
+  const anniversaries = getAnniversaries();
+  return `
+    <div class="mb-6">
+      <h2 class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+        <span class="h-px flex-1 bg-slate-800"></span>
+        💕 纪念日
+        <span class="h-px flex-1 bg-slate-800"></span>
+      </h2>
+      <div class="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+        <div class="max-h-64 overflow-y-auto">
+          ${anniversaries.map((a, i) => `
+            <div class="flex items-center gap-2 border-b border-slate-800 px-3 py-2 group">
+              <span class="text-xs text-slate-600 w-5 text-right flex-shrink-0">${i + 1}</span>
+              <div class="flex-1 min-w-0">
+                <span class="text-sm text-slate-300 settings-ann-name" data-idx="${i}">${escHtml(a.name)}</span>
+                <span class="text-xs text-slate-500 ml-2 settings-ann-date" data-idx="${i}">${formatAnniversaryDateFull(a.date)}</span>
+              </div>
+              <div class="flex gap-1 flex-shrink-0">
+                <button class="settings-edit-ann-btn text-slate-500 hover:text-emerald-400 text-xs px-2 py-1" data-idx="${i}">✎</button>
+                ${anniversaries.length > 1 ? `<button class="settings-delete-ann-btn text-slate-500 hover:text-rose-400 text-xs px-2 py-1" data-idx="${i}">✕</button>` : ""}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <!-- 添加新纪念日 -->
+        <div class="border-t border-slate-700 p-3">
+          <div class="flex gap-2 flex-wrap">
+            <input type="text" id="settings-new-ann-name" class="flex-1 min-w-[80px] rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500 placeholder-slate-600" placeholder="纪念日名称" />
+            <input type="date" id="settings-new-ann-date" class="rounded-lg border border-slate-600 bg-slate-800 px-2 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500" value="2023-10-08" />
+            <input type="time" id="settings-new-ann-time" class="rounded-lg border border-slate-600 bg-slate-800 px-2 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500" value="00:00" step="1" />
+            <button id="settings-add-ann" class="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 active:scale-95 transition-all whitespace-nowrap">+ 添加</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+};
 
 /**
  * 渲染用户数据区域
@@ -161,7 +206,7 @@ const renderDataSection = (stats) => `
         </div>
       `).join("")}
     </div>
-  </div>`;
+    </div>`;
 
 /**
  * 渲染用户数据详情
@@ -259,6 +304,7 @@ const html = (stats) => {
     </div>
 
     ${renderOptionSection()}
+    ${renderAnniversarySection()}
     ${renderDataSection(stats)}
 
     <!-- 操作按钮区 -->
@@ -609,6 +655,60 @@ const bindEvents = () => {
         refreshPage();
         return;
       }
+
+      // 纪念日编辑 — 进入内联编辑模式
+      if (target.classList.contains("settings-edit-ann-btn")) {
+        e.stopPropagation();
+        const idx = parseInt(target.dataset.idx, 10);
+        if (isNaN(idx)) return;
+        const row = target.closest(".flex.items-center");
+        if (!row) return;
+        const nameEl = row.querySelector(".settings-ann-name");
+        const dateEl = row.querySelector(".settings-ann-date");
+        const anniversaries = getAnniversaries();
+        const ann = anniversaries[idx];
+        if (!nameEl || !dateEl || !ann) return;
+
+        const nameVal = ann.name;
+        const dateVal = ann.date.slice(0, 10);
+        const timeVal = ann.date.slice(11, 19) || "00:00:00";
+        nameEl.innerHTML = `<input type="text" class="settings-inline-ann-name w-24 rounded border border-emerald-600 bg-slate-800 px-2 py-1 text-sm text-slate-100 outline-none" value="${escHtml(nameVal)}" />`;
+        dateEl.innerHTML = `
+          <input type="date" class="settings-inline-ann-date rounded border border-emerald-600 bg-slate-800 px-2 py-1 text-xs text-slate-100 outline-none" value="${dateVal}" />
+          <input type="time" class="settings-inline-ann-time rounded border border-emerald-600 bg-slate-800 px-2 py-1 text-xs text-slate-100 outline-none ml-1" value="${timeVal}" step="1" />
+        `;
+
+        const actionDiv = row.querySelector(".flex.gap-1.flex-shrink-0");
+        if (actionDiv) {
+          actionDiv.innerHTML = `
+            <button class="settings-confirm-ann-edit text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1" data-idx="${idx}">✓</button>
+            <button class="settings-cancel-edit text-slate-400 hover:text-slate-300 text-xs px-2 py-1">✕</button>
+          `;
+        }
+        const nameInput = nameEl.querySelector("input");
+        if (nameInput) nameInput.focus();
+        return;
+      }
+
+      // 纪念日确认编辑
+      if (target.classList.contains("settings-confirm-ann-edit")) {
+        e.stopPropagation();
+        const idx = parseInt(target.dataset.idx, 10);
+        if (isNaN(idx)) return;
+        const nameInput = document.querySelector(".settings-inline-ann-name");
+        const dateInput = document.querySelector(".settings-inline-ann-date");
+        const timeInput = document.querySelector(".settings-inline-ann-time");
+        if (!nameInput || !dateInput) return;
+        const anniversaries = getAnniversaries();
+        const ann = anniversaries[idx];
+        if (!ann) return;
+        ann.name = nameInput.value.trim() || ann.name;
+        const timeVal = timeInput?.value || ann.date.slice(11, 19) || "00:00:00";
+        ann.date = `${dateInput.value || ann.date.slice(0, 10)}T${timeVal}`;
+        save(ANNIVERSARY_KEY, anniversaries);
+        refreshPage();
+        return;
+      }
     });
   }
 
@@ -661,6 +761,45 @@ const bindEvents = () => {
   // 清空
   const btnClear = document.getElementById("settings-btn-clear");
   if (btnClear) btnClear.addEventListener("click", handleClear);
+
+  // ==================== 纪念日编辑 ====================
+
+  // 添加纪念日
+  const btnAddAnn = document.getElementById("settings-add-ann");
+  const annNameInput = document.getElementById("settings-new-ann-name");
+  const annDateInput = document.getElementById("settings-new-ann-date");
+  const annTimeInput = document.getElementById("settings-new-ann-time");
+  if (btnAddAnn && annNameInput && annDateInput) {
+    const addAnniversary = () => {
+      const name = annNameInput.value.trim();
+      const dateVal = annDateInput.value;
+      if (!name || !dateVal) return;
+      const timeVal = annTimeInput?.value || "00:00:00";
+      const anniversaries = getAnniversaries();
+      const id = String(Date.now());
+      anniversaries.push({ id, name, date: `${dateVal}T${timeVal}` });
+      save(ANNIVERSARY_KEY, anniversaries);
+      refreshPage();
+    };
+    btnAddAnn.addEventListener("click", addAnniversary);
+  }
+
+  // 删除纪念日（至少保留一个）
+  document.querySelectorAll(".settings-delete-ann-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (isNaN(idx)) return;
+      const anniversaries = getAnniversaries();
+      if (anniversaries.length <= 1) return;
+      anniversaries.splice(idx, 1);
+      save(ANNIVERSARY_KEY, anniversaries);
+      refreshPage();
+    });
+  });
+
+  // 编辑纪念日 — 内联编辑（通过事件委托在 app 上）
+  // 编辑按钮已在 _settingsDelegated 中处理
 };
 
 /**

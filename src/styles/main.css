@@ -230,3 +230,10 @@ body {
   80% { transform: translateX(1px); }
   90% { transform: scale(1.03); }
 }
+
+/* ===== 旅行地图时间线高亮 ===== */
+.travel-highlight {
+  background-color: var(--accent-a-bg) !important;
+  border-color: var(--accent-a-border) !important;
+  transition: background-color 0.3s, border-color 0.3s;
+}

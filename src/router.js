@@ -15,6 +15,7 @@ const routes = {
   jar: () => import("./components/jar.js"),
   quests: () => import("./components/quests.js"),
   anniversary: () => import("./components/anniversary.js"),
+  travel: () => import("./components/travel.js"),
   settings: () => import("./components/settings.js"),
 };
 
@@ -24,6 +25,7 @@ const titles = {
   jar: "🏺 UsTime · 漂流瓶",
   quests: "📋 UsTime · 小本本",
   anniversary: "💕 UsTime · 纪念日",
+  travel: "🌍 UsTime · 旅行地图",
   settings: "⚙️ UsTime · 数据管理",
 };
 
@@ -60,6 +62,16 @@ const render = async () => {
   const loader = routes[name];
 
   if (!app) return;
+
+  // 旅行页面撑满宽度，其他页面限制 512px
+  if (name === "travel") {
+    app.classList.add("md:max-w-none");
+    app.classList.add("md:px-8");
+    app.classList.remove("max-w-lg");
+  } else {
+    app.classList.add("max-w-lg");
+    app.classList.remove("md:max-w-none", "md:px-8");
+  }
 
   // 更新浏览器标题
   document.title = titles[name] || "UsTime";

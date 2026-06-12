@@ -1,14 +1,15 @@
 /**
  * 数据管理页面 — 查看、编辑、导出、导入、清空所有数据
  *
- * 两大功能区：
+ * 三大功能区：
  * 1. 决策选项编辑 — 增删改 food/activity/reward/relationship/private 类别下的选项
- * 2. 用户数据管理 — 查看/删除储蓄罐笔记、任务清单、决策历史
+ * 2. 纪念日编辑 — 增删改纪念日名称和日期时间
+ * 3. 用户数据管理 — 查看/编辑/删除储蓄罐笔记、任务清单、决策历史、旅行记录
  *
  * 支持 JSON 导出/导入备份，以及一键清空（需二次确认）。
  */
 import { load, remove, save } from "../store.js";
-import { getOptions, getAnniversaries, formatAnniversaryDateFull } from "../utils/helpers.js";
+import { getOptions, getAnniversaries, getTravels, formatAnniversaryDateFull } from "../utils/helpers.js";
 import { getTheme, setTheme, getThemeList } from "../main.js";
 
 /** 决策选项类别配置 */
@@ -25,13 +26,14 @@ const DATA_KEYS = [
   { key: "jar_notes", label: "储蓄罐笔记", icon: "🏺" },
   { key: "quests", label: "任务清单", icon: "📋" },
   { key: "decision_history", label: "决策历史", icon: "🎲" },
+  { key: "travels", label: "旅行记录", icon: "🌍" },
 ];
 
 /** 纪念日存储 key */
 const ANNIVERSARY_KEY = "anniversaries";
 
 /** 所有需要导出/清空的键 */
-const ALL_KEYS = [...DATA_KEYS.map((d) => d.key), "options", "jar_seen", "quests_counter", "anniversaries"];
+const ALL_KEYS = [...DATA_KEYS.map((d) => d.key), "options", "jar_seen", "quests_counter", "anniversaries", "travels"];
 
 /** 展开状态 */
 let expandedKey = null;
@@ -214,16 +216,30 @@ const renderDataSection = (stats) => `
  * @returns {string}
  */
 const renderDataDetail = (key) => {
-  const data = load(key, []);
+  const data = key === "travels" ? getTravels() : load(key, []);
   if (!Array.isArray(data) || data.length === 0) {
     return `<div class="mt-2 rounded-xl border border-slate-700 bg-slate-900 p-4 text-center text-sm text-slate-500">暂无数据</div>`;
   }
   const items = key === "decision_history" ? [...data].reverse() : data;
+  const addTravelForm = key === "travels" ? `
+    <div class="border-t border-slate-700 p-3 space-y-2">
+      <div class="flex gap-2 flex-wrap">
+        <input type="text" id="settings-new-travel-city" class="flex-1 min-w-[60px] rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500 placeholder-slate-600" placeholder="城市名" />
+        <input type="text" id="settings-new-travel-flag" class="w-12 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500 placeholder-slate-600" placeholder="🏳️" />
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <input type="date" id="settings-new-travel-date" class="flex-1 min-w-[100px] rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500" />
+        <input type="number" id="settings-new-travel-lat" class="w-20 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500 placeholder-slate-600" placeholder="纬度" step="any" />
+        <input type="number" id="settings-new-travel-lng" class="w-20 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-emerald-500 placeholder-slate-600" placeholder="经度" step="any" />
+      </div>
+      <button id="settings-add-travel" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 active:scale-95 transition-all w-full">+ 添加旅行记录</button>
+    </div>` : "";
   return `
     <div class="mt-2 rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
       <div class="max-h-64 overflow-y-auto">
         ${items.map((item) => renderDataItem(key, item)).join("")}
       </div>
+      ${addTravelForm}
     </div>`;
 };
 
@@ -263,6 +279,18 @@ const renderDataItem = (key, item) => {
             <p class="text-xs text-slate-500 mt-0.5">${formatTime(item.ts)}</p>
           </div>
           ${deleteBtn(item.ts)}
+        </div>`;
+    case "travels":
+      return `
+        <div class="flex items-start justify-between gap-2 border-b border-slate-800 px-3 py-2 text-sm settings-travel-row" data-idx="${escHtml(String(item.id))}">
+          <div class="min-w-0 flex-1">
+            <p class="text-slate-300 truncate settings-travel-city">${item.flag ? escHtml(item.flag) + " " : ""}${escHtml(item.city)}</p>
+            <p class="text-xs text-slate-500 mt-0.5 settings-travel-meta">${item.date} · ${item.lat?.toFixed(2)}, ${item.lng?.toFixed(2)}</p>
+          </div>
+          <div class="flex gap-1 flex-shrink-0">
+            <button class="settings-edit-travel-btn text-slate-500 hover:text-emerald-400 text-xs px-2 py-1" data-id="${escHtml(String(item.id))}">✎</button>
+            ${deleteBtn(item.id)}
+          </div>
         </div>`;
     default:
       return `<div class="border-b border-slate-800 px-3 py-2 text-sm text-slate-400">${escHtml(JSON.stringify(item))}</div>`;
@@ -351,9 +379,14 @@ const formatSize = (bytes) => {
  */
 const collectStats = () =>
   DATA_KEYS.map(({ key, label, icon }) => {
-    const data = load(key, []);
+    let data;
+    if (key === "travels") {
+      data = getTravels();
+    } else {
+      data = load(key, []);
+    }
     const count = Array.isArray(data) ? data.length : 0;
-    const raw = localStorage.getItem(`ustime_${key}`) || "";
+    const raw = key === "travels" ? JSON.stringify(data) : (localStorage.getItem(`ustime_${key}`) || "");
     const size = formatSize(new Blob([raw]).size);
     return { key, label, icon, count, size };
   });
@@ -430,10 +463,10 @@ const resetOptions = () => {
  * @param {string} id
  */
 const deleteItem = (key, id) => {
-  const data = load(key, []);
+  const data = key === "travels" ? getTravels() : load(key, []);
   if (!Array.isArray(data)) return;
   let filtered;
-  if (key === "jar_notes" || key === "quests") {
+  if (key === "jar_notes" || key === "quests" || key === "travels") {
     filtered = data.filter((item) => item.id !== id);
   } else if (key === "decision_history") {
     filtered = data.filter((item) => String(item.ts) !== id);
@@ -709,6 +742,65 @@ const bindEvents = () => {
         refreshPage();
         return;
       }
+
+      // 旅行记录编辑 — 进入内联编辑模式
+      if (target.classList.contains("settings-edit-travel-btn")) {
+        e.stopPropagation();
+        const id = target.dataset.id;
+        if (!id) return;
+        const row = target.closest(".settings-travel-row");
+        if (!row) return;
+        const cityEl = row.querySelector(".settings-travel-city");
+        const metaEl = row.querySelector(".settings-travel-meta");
+        const travels = getTravels();
+        const travel = travels.find((t) => String(t.id) === id);
+        if (!cityEl || !metaEl || !travel) return;
+
+        cityEl.innerHTML = `<input type="text" class="settings-inline-travel-city w-20 rounded border border-emerald-600 bg-slate-800 px-2 py-1 text-sm text-slate-100 outline-none" value="${escHtml(travel.city)}" />`;
+        metaEl.innerHTML = `
+          <input type="text" class="settings-inline-travel-flag w-10 rounded border border-emerald-600 bg-slate-800 px-1 py-1 text-xs text-slate-100 outline-none" value="${escHtml(travel.flag || "")}" placeholder="🏳️" />
+          <input type="date" class="settings-inline-travel-date rounded border border-emerald-600 bg-slate-800 px-2 py-1 text-xs text-slate-100 outline-none ml-1" value="${travel.date}" />
+          <input type="number" class="settings-inline-travel-lat w-16 rounded border border-emerald-600 bg-slate-800 px-1 py-1 text-xs text-slate-100 outline-none ml-1" value="${travel.lat}" step="any" placeholder="lat" />
+          <input type="number" class="settings-inline-travel-lng w-16 rounded border border-emerald-600 bg-slate-800 px-1 py-1 text-xs text-slate-100 outline-none ml-1" value="${travel.lng}" step="any" placeholder="lng" />
+        `;
+
+        const actionDiv = row.querySelector(".flex.gap-1.flex-shrink-0");
+        if (actionDiv) {
+          actionDiv.innerHTML = `
+            <button class="settings-confirm-travel-edit text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1" data-id="${escHtml(id)}">✓</button>
+            <button class="settings-cancel-edit text-slate-400 hover:text-slate-300 text-xs px-2 py-1">✕</button>
+          `;
+        }
+        const cityInput = cityEl.querySelector("input");
+        if (cityInput) cityInput.focus();
+        return;
+      }
+
+      // 旅行记录确认编辑
+      if (target.classList.contains("settings-confirm-travel-edit")) {
+        e.stopPropagation();
+        const id = target.dataset.id;
+        if (!id) return;
+        const cityInput = document.querySelector(".settings-inline-travel-city");
+        const flagInput = document.querySelector(".settings-inline-travel-flag");
+        const dateInput = document.querySelector(".settings-inline-travel-date");
+        const latInput = document.querySelector(".settings-inline-travel-lat");
+        const lngInput = document.querySelector(".settings-inline-travel-lng");
+        if (!cityInput || !dateInput) return;
+        const travels = getTravels();
+        const travel = travels.find((t) => String(t.id) === id);
+        if (!travel) return;
+        const city = cityInput.value.trim();
+        if (!city) return;
+        travel.city = city;
+        travel.flag = flagInput?.value?.trim() || "";
+        travel.date = dateInput.value || travel.date;
+        travel.lat = latInput?.value ? parseFloat(latInput.value) : travel.lat;
+        travel.lng = lngInput?.value ? parseFloat(lngInput.value) : travel.lng;
+        save("travels", travels);
+        refreshPage();
+        return;
+      }
     });
   }
 
@@ -782,6 +874,41 @@ const bindEvents = () => {
       refreshPage();
     };
     btnAddAnn.addEventListener("click", addAnniversary);
+  }
+
+  // ==================== 旅行记录编辑 ====================
+
+  // 添加旅行记录
+  const btnAddTravel = document.getElementById("settings-add-travel");
+  const travelCityInput = document.getElementById("settings-new-travel-city");
+  const travelFlagInput = document.getElementById("settings-new-travel-flag");
+  const travelDateInput = document.getElementById("settings-new-travel-date");
+  const travelLatInput = document.getElementById("settings-new-travel-lat");
+  const travelLngInput = document.getElementById("settings-new-travel-lng");
+  if (btnAddTravel && travelCityInput && travelDateInput) {
+    const addTravel = () => {
+      const city = travelCityInput.value.trim();
+      const dateVal = travelDateInput.value;
+      if (!city || !dateVal) return;
+      const travels = getTravels();
+      const id = String(Date.now());
+      travels.push({
+        id,
+        city,
+        flag: travelFlagInput?.value?.trim() || "",
+        date: dateVal,
+        lat: travelLatInput?.value ? parseFloat(travelLatInput.value) : 22.0,
+        lng: travelLngInput?.value ? parseFloat(travelLngInput.value) : 114.0,
+      });
+      save("travels", travels);
+      travelCityInput.value = "";
+      travelFlagInput.value = "";
+      travelDateInput.value = "";
+      travelLatInput.value = "";
+      travelLngInput.value = "";
+      refreshPage();
+    };
+    btnAddTravel.addEventListener("click", addTravel);
   }
 
   // 删除纪念日（至少保留一个）

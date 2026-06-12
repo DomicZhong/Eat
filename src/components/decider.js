@@ -8,7 +8,7 @@
  *
  * 特性: 7天历史防重复提示、快速重抽(排除当前)、一键复制
  */
-import { options, randomPick, categoryEmoji } from "../utils/helpers.js";
+import { options, randomPick, categoryEmoji, sinceTogether, getSpecialDay } from "../utils/helpers.js";
 import { record, checkRecent } from "../utils/history.js";
 
 /** 主分类配置 */
@@ -29,11 +29,23 @@ let currentResult = { text: "", category: null, value: null, rawText: "", lastAl
  * 构建 Decider 组件的 HTML 结构
  * @returns {string}
  */
-const html = () => `
+const html = () => {
+  const special = getSpecialDay();
+  const { days } = sinceTogether();
+  return `
   <div class="page-enter">
     <h1 class="text-2xl font-bold text-center mb-4 tracking-wide">
       🎲 <span class="text-emerald-400">Us</span><span class="text-rose-400">Time</span>
     </h1>
+
+    ${special ? `
+    <!-- 特殊天数横幅 -->
+    <div class="mb-4 rounded-2xl bg-gradient-to-r from-rose-900/60 via-amber-900/40 to-emerald-900/60 border border-rose-700/50 p-4 text-center animate-pulse">
+      <p class="text-3xl mb-1">${special.emoji}</p>
+      <p class="text-lg font-bold text-rose-200">${special.text}</p>
+      <p class="text-xs text-slate-400 mt-1">今天是第 <span class="text-amber-300 font-semibold">${days}</span> 天</p>
+    </div>
+    ` : ""}
 
     <!-- 结果展示区（固定最小高度，避免文本长短跳动） -->
     <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-center min-h-[144px] flex flex-col items-center justify-center">
@@ -80,7 +92,7 @@ const html = () => `
         id="decider-btn-private"
         class="btn-violet rounded-xl px-3 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
       >
-        🔥 私密
+        🔥🔥🔥
       </button>
     </div>
 
@@ -92,7 +104,7 @@ const html = () => `
       🎲 Random All
     </button>
   </div>
-`;
+`;};
 
 /**
  * 触发结果区弹跳动画
@@ -132,7 +144,16 @@ const updateResult = (html, sub = "", category = null, value = null, rawText = "
   currentResult = { text: html, category, value, rawText };
   showActions();
   bounceResult();
-  if (category && value) showHistoryHint(category, value);
+  if (category && value) {
+    const hint = checkRecent(category, value);
+    const hintEl = document.getElementById("decider-result-hint");
+    if (hintEl && hint.count > 0) {
+      hintEl.textContent = `最近 ${hint.lastDate} 已选过，共 ${hint.count} 次`;
+      hintEl.classList.remove("hidden");
+    } else if (hintEl) {
+      hintEl.classList.add("hidden");
+    }
+  }
 };
 
 /**
@@ -297,9 +318,11 @@ const bindEvents = () => {
 /**
  * 渲染 Decider 组件到目标容器
  * @param {HTMLElement} container - 挂载目标
+ * @returns {() => void} 销毁函数
  */
 export const render = (container) => {
   currentResult = { text: "", category: null, value: null, rawText: "", lastAll: null };
   container.innerHTML = html();
   bindEvents();
+  return () => {};
 };

@@ -196,7 +196,7 @@ const bindEvents = (container) => {
   const btnClearDone = document.getElementById("quests-btn-clear-done");
 
   /**
-   * 添加新任务
+   * 添加新任务（快速连续添加：不清除输入框，保持焦点）
    */
   const addQuest = () => {
     const text = input?.value.trim();
@@ -205,6 +205,8 @@ const bindEvents = (container) => {
     const quests = load(STORAGE_KEY, []);
     quests.push({ id: uid(), text, done: false, assignee: currentAssignee });
     save(STORAGE_KEY, quests);
+    input.value = "";
+    input.focus();
     rerender(container);
   };
 
@@ -279,4 +281,5 @@ export const render = (container) => {
   const quests = load(STORAGE_KEY, []);
   container.innerHTML = html(quests);
   bindEvents(container);
+  return () => {};
 };

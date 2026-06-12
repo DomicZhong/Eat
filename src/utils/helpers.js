@@ -1,8 +1,12 @@
 /**
  * 决策选项数据源
  * 包含五个类别：饮食、活动、奖励、情感话题、私密奖励
+ * 选项可被用户自定义编辑，编辑后的数据存储在 LocalStorage 中
  */
-export const options = {
+import { load } from "../store.js";
+
+/** 默认选项（内置数据，作为 fallback） */
+const DEFAULT_OPTIONS = {
   food: [
     // 中式经典
     "火锅", "家常菜", "烧烤", "广东早茶", "麻辣烫", "酸菜鱼", "烤鱼", "小龙虾",
@@ -29,8 +33,8 @@ export const options = {
     "逛书店", "逛博物馆", "看展览画展", "看话剧音乐剧", "看演出",
     "逛图书馆", "逛古镇", "逛Shopping Mall", "逛花市", "泡咖啡馆",
     // 趣味互动
-    "一起大扫除", "逛游乐园", "抓娃娃", 
-    "逛夜市", "坐摩天轮", "学跳双人舞", 
+    "一起大扫除", "逛游乐园", "抓娃娃",
+    "逛夜市", "坐摩天轮", "学跳双人舞",
     "泡温泉", "逛菜市场一起买菜", "看烟花",
   ],
   reward: [
@@ -41,7 +45,7 @@ export const options = {
     "零食投喂权", "自制甜点一份", "烛光晚餐一次",
     "剥好水果喂着吃", "深夜泡面服务",
     // 选择权 & 特权
-    "线下看电影", "一天国王/女王特权", 
+    "线下看电影", "一天国王/女王特权",
     "周末睡懒觉特权",
     // 情感 & 浪漫
     "手写情书一封", "送一束花", "放喜欢的歌", "讲睡前故事",
@@ -100,6 +104,47 @@ export const options = {
     "今晚一切由 ISTP 主导", "今晚一切由 ISFJ 主导",
   ],
 };
+
+const OPTIONS_KEY = "options";
+
+/**
+ * 获取当前生效的选项（优先用户自定义，否则使用默认值）
+ * @returns {object} 选项对象
+ */
+export const getOptions = () => {
+  const saved = load(OPTIONS_KEY, null);
+  if (saved && typeof saved === "object") {
+    // 合并：用户自定义的覆盖默认，确保所有类别都存在
+    const merged = { ...DEFAULT_OPTIONS };
+    for (const key of Object.keys(merged)) {
+      if (Array.isArray(saved[key]) && saved[key].length > 0) {
+        merged[key] = saved[key];
+      }
+    }
+    return merged;
+  }
+  return { ...DEFAULT_OPTIONS };
+};
+
+/**
+ * 决策选项（响应式：优先从 LocalStorage 读取用户自定义数据）
+ * 外部读取 options.food / options.activity 等即可
+ */
+export const options = new Proxy({}, {
+  get(_, prop) {
+    return getOptions()[prop] || [];
+  },
+  ownKeys() {
+    return Object.keys(getOptions());
+  },
+  getOwnPropertyDescriptor(_, prop) {
+    const opts = getOptions();
+    if (prop in opts) {
+      return { enumerable: true, configurable: true };
+    }
+    return undefined;
+  },
+});
 
 /**
  * 通用的随机选择函数，从数组中随机返回一个元素
@@ -160,6 +205,39 @@ export const sinceTogether = () => {
   const m = Math.floor((remain % 3600) / 60);
   const s = remain % 60;
   return { days, time: `${h}时${m}分${s}秒` };
+};
+
+/**
+ * 特殊天数配置（天数 → 提示文案 + emoji）
+ */
+const SPECIAL_DAYS = {
+  100: { emoji: "💯", text: "在一起 100 天啦！" },
+  200: { emoji: "💕", text: "200 天，越来越懂彼此" },
+  300: { emoji: "🌟", text: "300 天的默契与陪伴" },
+  365: { emoji: "🎂", text: "一周年！365 天快乐" },
+  400: { emoji: "💖", text: "400 天，爱意更浓" },
+  500: { emoji: "🔥", text: "500 天！热恋如初" },
+  520: { emoji: "💝", text: "520 天！我爱你" },
+  600: { emoji: "✨", text: "600 天，每一天都是礼物" },
+  666: { emoji: "😈", text: "666 天，一切都超顺！" },
+  700: { emoji: "💫", text: "700 天，依然心动" },
+  730: { emoji: "🌹", text: "两周年！730 天快乐" },
+  800: { emoji: "💎", text: "800 天，坚如磐石" },
+  888: { emoji: "🧧", text: "888 天，发发发！" },
+  900: { emoji: "🎯", text: "900 天，长长久久" },
+  999: { emoji: "👑", text: "999 天，天长地久" },
+  1000: { emoji: "🏆", text: "1000 天！里程碑达成" },
+  1095: { emoji: "🎉", text: "三周年！1095 天" },
+  1314: { emoji: "💍", text: "1314 天，一生一世" },
+};
+
+/**
+ * 检查今天是否为特殊纪念日（整百天、520、周年等）
+ * @returns {{ emoji: string, text: string } | null} 特殊天数信息，或 null
+ */
+export const getSpecialDay = () => {
+  const { days } = sinceTogether();
+  return SPECIAL_DAYS[days] || null;
 };
 
 export const categoryEmoji = (category) => {

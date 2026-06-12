@@ -20,7 +20,12 @@ const html = () => {
       <p class="text-6xl mb-6">💕</p>
 
       <!-- 在一起 -->
-      <p class="text-slate-400 text-lg mb-4 tracking-widest">在 一 起</p>
+      <p class="text-slate-400 text-lg mb-1 tracking-widest">在 一 起</p>
+      <p class="text-slate-500 text-sm mb-4">
+        <span class="text-emerald-400 font-medium">ISTP</span>
+        <span class="mx-2 text-rose-400">♥</span>
+        <span class="text-rose-400 font-medium">ISFJ</span>
+      </p>
 
       <!-- 天数（大字突出） -->
       <p class="mb-3">
@@ -67,8 +72,15 @@ const startTicker = () => {
 /**
  * 渲染纪念日页面到目标容器
  * @param {HTMLElement} container - 挂载目标
+ * @returns {() => void} 销毁函数，用于清理计时器
  */
 export const render = (container) => {
   container.innerHTML = html();
   startTicker();
+  return () => {
+    if (tickTimer) {
+      clearInterval(tickTimer);
+      tickTimer = null;
+    }
+  };
 };

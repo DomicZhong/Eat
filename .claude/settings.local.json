@@ -10,7 +10,11 @@
       "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Update README with full feature docs\")",
       "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" push origin main)",
       "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" add -A)",
-      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Add private rewards category + merge user's intimate options\")"
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Add private rewards category + merge user's intimate options\")",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" add src/components/decider.js)",
+      "Bash(git -C \"d:\\\\Personal\\\\Code\\\\ISTP\" commit -m \"Fix anniversary date to 2023-10-08\")",
+      "Bash(unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY)",
+      "Bash(git -c http.proxy= -c https.proxy= push origin main)"
     ]
   }
 }

@@ -6,12 +6,16 @@
 /** @type {HTMLElement | null} */
 const app = document.getElementById("app");
 
+/** 当前组件的销毁函数（用于切换时清理） */
+let currentDestroy = null;
+
 /** 路由表：hash 路径 → 组件渲染函数 */
 const routes = {
   decider: () => import("./components/decider.js"),
   jar: () => import("./components/jar.js"),
   quests: () => import("./components/quests.js"),
   anniversary: () => import("./components/anniversary.js"),
+  settings: () => import("./components/settings.js"),
 };
 
 /** 页面标题映射 */
@@ -20,6 +24,7 @@ const titles = {
   jar: "🏺 UsTime · 漂流瓶",
   quests: "📋 UsTime · 小本本",
   anniversary: "💕 UsTime · 纪念日",
+  settings: "⚙️ UsTime · 数据管理",
 };
 
 /** 默认路由（首页重定向） */
@@ -83,17 +88,26 @@ const render = async () => {
   try {
     const module = await loader();
     if (module.render) {
-      await module.render(app);
+      // 切换前清理上一个组件
+      if (currentDestroy) {
+        currentDestroy();
+        currentDestroy = null;
+      }
+      const destroy = await module.render(app);
+      if (typeof destroy === "function") currentDestroy = destroy;
     }
     window.scrollTo(0, 0);
   } catch (err) {
+    if (currentDestroy) {
+      currentDestroy();
+      currentDestroy = null;
+    }
     app.innerHTML = `
       <div class="flex flex-col items-center justify-center py-20 text-center">
         <p class="text-5xl mb-4">⚠️</p>
         <p class="text-slate-400 text-lg">页面加载失败</p>
         <a href="#/decider" class="mt-4 text-emerald-400 underline">返回首页</a>
       </div>`;
-    console.error("[Router] 组件加载失败:", name, err);
     window.scrollTo(0, 0);
   }
 };

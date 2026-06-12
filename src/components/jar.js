@@ -14,6 +14,28 @@ const STORAGE_KEY = "jar_notes";
 const SEEN_KEY = "jar_seen";
 
 /**
+ * 更新导航栏储蓄罐角标
+ */
+const updateNavBadge = () => {
+  const navJar = document.getElementById("nav-jar");
+  if (!navJar) return;
+  const notes = load(STORAGE_KEY, []);
+  const seen = load(SEEN_KEY, []);
+  const validIds = new Set(notes.map((n) => n.id));
+  const unseen = notes.length - seen.filter((id) => validIds.has(id)).length;
+
+  const old = navJar.querySelector(".nav-badge");
+  if (old) old.remove();
+
+  if (unseen > 0) {
+    const badge = document.createElement("span");
+    badge.className = "nav-badge absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-amber-500 text-[10px] font-bold text-slate-900 px-1";
+    badge.textContent = unseen > 99 ? "99+" : String(unseen);
+    navJar.appendChild(badge);
+  }
+};
+
+/**
  * 生成唯一 ID
  * @returns {string}
  */
@@ -79,17 +101,40 @@ const html = (notes, unseenCount) => `
       </div>
     </div>
 
-    <!-- 统计 -->
-    <div class="mb-4 flex items-center justify-between text-sm text-slate-400">
-      <span>📝 已存 <strong id="jar-count" class="text-slate-200">${notes.length}</strong> 条 · 🆕 未抽 <strong class="text-amber-400">${unseenCount}</strong> 条</span>
-      ${notes.length > 0 ? `
-        <button id="jar-btn-clear" class="text-slate-500 hover:text-rose-400 transition-colors">清空全部</button>
-      ` : ""}
+    <!-- 随机抽取（移到列表上面） -->
+    <button
+      id="jar-btn-pick"
+      class="w-full rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 px-6 py-4 text-lg font-bold text-white shadow-lg hover:from-rose-500 hover:to-amber-500 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none mb-4"
+      ${notes.length === 0 ? "disabled" : ""}
+    >
+      <span id="jar-btn-pick-text">✨ 随机抽取一条${unseenCount === 0 && notes.length > 0 ? ' (全部已抽，重新洗牌)' : ''}</span>
+    </button>
+
+    <!-- 抽取结果（带摇晃揭晓动效） -->
+    <div id="jar-pick-result" class="mb-4 rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center hidden">
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <span id="jar-pick-author" class="text-xs font-medium px-1.5 py-0.5 rounded"></span>
+        <span id="jar-pick-time" class="text-xs text-slate-500"></span>
+      </div>
+      <p id="jar-pick-text" class="text-lg leading-relaxed text-slate-200"></p>
     </div>
 
-    <!-- 已存列表 -->
+    <!-- 统计 & 操作栏 -->
+    <div class="mb-3 flex items-center justify-between text-sm text-slate-400">
+      <span>📝 已存 <strong id="jar-count" class="text-slate-200">${notes.length}</strong> 条 · 🆕 未抽 <strong class="text-amber-400">${unseenCount}</strong> 条</span>
+      <div class="flex items-center gap-3">
+        ${notes.length > 0 ? `
+          <button id="jar-btn-toggle-list" class="text-slate-400 hover:text-emerald-400 transition-colors text-xs">
+            查看全部 ▾
+          </button>
+          <button id="jar-btn-clear" class="text-slate-500 hover:text-rose-400 transition-colors text-xs">清空</button>
+        ` : ""}
+      </div>
+    </div>
+
+    <!-- 已存列表（默认折叠） -->
     ${notes.length > 0 ? `
-      <div class="mb-4 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/50 p-2">
+      <div id="jar-notes-list" class="mb-4 max-h-60 space-y-1 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/50 p-2 hidden">
         ${notes.map((n) => `
           <div class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-800/50 transition-colors group">
             <span class="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${n.author === 'ISTP' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-rose-900/50 text-rose-400'}">${n.author}</span>
@@ -105,36 +150,21 @@ const html = (notes, unseenCount) => `
         `).join("")}
       </div>
     ` : ""}
-
-    <!-- 随机抽取 -->
-    <button
-      id="jar-btn-pick"
-      class="w-full rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 px-6 py-4 text-lg font-bold text-white shadow-lg hover:from-rose-500 hover:to-amber-500 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none"
-      ${notes.length === 0 ? "disabled" : ""}
-    >
-      ✨ 随机抽取一条${unseenCount === 0 && notes.length > 0 ? ' (全部已抽，重新洗牌)' : ''}
-    </button>
-
-    <div id="jar-pick-result" class="mt-4 rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center hidden">
-      <div class="flex items-center justify-center gap-2 mb-2">
-        <span id="jar-pick-author" class="text-xs font-medium px-1.5 py-0.5 rounded"></span>
-        <span id="jar-pick-time" class="text-xs text-slate-500"></span>
-      </div>
-      <p id="jar-pick-text" class="text-lg leading-relaxed text-slate-200"></p>
-    </div>
   </div>
 `;
 
 /**
- * 重新渲染整个组件
+ * 重新渲染整个组件，并触发角标更新
  * @param {HTMLElement} container
  */
 const rerender = (container) => {
   render(container);
+  // 触发导航栏角标更新
+  window.dispatchEvent(new Event("hashchange"));
 };
 
-/** 当前选中的作者 */
-let currentAuthor = "ISTP";
+/** 当前选中的作者（从 LocalStorage 读取上次选择，默认为 ISTP） */
+let currentAuthor = load("jar_last_author", "ISTP");
 
 /**
  * 更新作者选择器样式
@@ -175,11 +205,11 @@ const bindEvents = (container) => {
     });
   }
 
-  // 作者切换
+  // 作者切换（记住上次选择）
   const btnIstp = document.getElementById("jar-author-istp");
   const btnIsfj = document.getElementById("jar-author-isfj");
-  if (btnIstp) btnIstp.addEventListener("click", () => { currentAuthor = "ISTP"; updateAuthorUI(); });
-  if (btnIsfj) btnIsfj.addEventListener("click", () => { currentAuthor = "ISFJ"; updateAuthorUI(); });
+  if (btnIstp) btnIstp.addEventListener("click", () => { currentAuthor = "ISTP"; save("jar_last_author", "ISTP"); updateAuthorUI(); });
+  if (btnIsfj) btnIsfj.addEventListener("click", () => { currentAuthor = "ISFJ"; save("jar_last_author", "ISFJ"); updateAuthorUI(); });
 
   // 存入
   if (btnSave && input) {
@@ -190,6 +220,7 @@ const bindEvents = (container) => {
       const notes = load(STORAGE_KEY, []);
       notes.push({ id: uid(), text, author: currentAuthor, ts: Date.now() });
       save(STORAGE_KEY, notes);
+      updateNavBadge();
       rerender(container);
     });
   }
@@ -200,6 +231,17 @@ const bindEvents = (container) => {
       save(STORAGE_KEY, []);
       save(SEEN_KEY, []);
       rerender(container);
+    });
+  }
+
+  // 查看全部（展开/折叠笔记列表）
+  const btnToggle = document.getElementById("jar-btn-toggle-list");
+  const notesList = document.getElementById("jar-notes-list");
+  if (btnToggle && notesList) {
+    btnToggle.addEventListener("click", () => {
+      const isHidden = notesList.classList.contains("hidden");
+      notesList.classList.toggle("hidden");
+      btnToggle.textContent = isHidden ? "收起 ▴" : "查看全部 ▾";
     });
   }
 
@@ -221,7 +263,7 @@ const bindEvents = (container) => {
     }
   });
 
-  // 随机抽取（不重复抽取）
+  // 随机抽取（不重复抽取 + 摇晃动效）
   if (btnPick && resultDiv && resultText && resultAuthor && resultTime) {
     btnPick.addEventListener("click", () => {
       const notes = load(STORAGE_KEY, []);
@@ -241,19 +283,33 @@ const bindEvents = (container) => {
       seen.push(picked.id);
       save(SEEN_KEY, seen);
 
-      // 显示结果（含作者标签）
-      resultText.textContent = `"${picked.text}"`;
-      resultAuthor.textContent = picked.author;
-      resultAuthor.className = `text-xs font-medium px-1.5 py-0.5 rounded ${picked.author === 'ISTP' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-rose-900/50 text-rose-400'}`;
-      resultTime.textContent = fmtTime(picked.ts);
-      resultDiv.classList.remove("hidden");
-      resultDiv.classList.remove("page-enter");
-      void resultDiv.offsetWidth;
-      resultDiv.classList.add("page-enter");
-
-      // 更新按钮：全部抽完时显示重置提示
+      // 更新按钮
       const remaining = notes.filter((n) => !seen.includes(n.id)).length;
-      btnPick.textContent = remaining === 0 ? '✨ 全部抽完，再抽一次 (重新洗牌)' : `✨ 随机抽取一条`;
+      const btnText = document.getElementById("jar-btn-pick-text");
+      if (btnText) {
+        btnText.textContent = remaining === 0 ? '✨ 全部抽完，再抽一次 (重新洗牌)' : '✨ 随机抽取一条';
+      }
+
+      // 🎁 摇晃动效：按钮抖动 → 显示结果（延迟揭晓）
+      btnPick.classList.add("jar-shake");
+      resultDiv.classList.add("hidden");
+
+      setTimeout(() => {
+        btnPick.classList.remove("jar-shake");
+
+        // 显示结果
+        resultText.textContent = `"${picked.text}"`;
+        resultAuthor.textContent = picked.author;
+        resultAuthor.className = `text-xs font-medium px-1.5 py-0.5 rounded ${picked.author === 'ISTP' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-rose-900/50 text-rose-400'}`;
+        resultTime.textContent = fmtTime(picked.ts);
+        resultDiv.classList.remove("hidden");
+        resultDiv.classList.remove("page-enter");
+        void resultDiv.offsetWidth;
+        resultDiv.classList.add("page-enter");
+      }, 500);
+
+      // 更新导航栏角标
+      updateNavBadge();
     });
   }
 };
@@ -272,4 +328,5 @@ export const render = (container) => {
 
   container.innerHTML = html(notes, Math.max(0, unseenCount));
   bindEvents(container);
+  return () => {};
 };

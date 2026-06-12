@@ -124,10 +124,45 @@ const render = async () => {
   }
 };
 
+/** 是否已通过密码验证 */
+let authenticated = false;
+
 /**
- * 初始化路由：绑定事件并渲染当前页面
+ * 密码锁屏 — SHA-256 验证，会话级解锁
+ * @returns {Promise<void>}
+ */
+const lockScreen = async () => {
+  const { renderLock, isUnlocked, showNav } = await import("./components/lock.js");
+  if (isUnlocked()) {
+    authenticated = true;
+    showNav();
+    return;
+  }
+  if (currentDestroy) { currentDestroy(); currentDestroy = null; }
+  const unlocked = await renderLock(app);
+  if (unlocked) {
+    authenticated = true;
+    showNav();
+  }
+};
+
+/**
+ * 渲染包装 — 先检查锁屏再渲染页面
+ */
+const renderGuarded = async () => {
+  if (!authenticated) await lockScreen();
+  if (authenticated) render();
+};
+
+/**
+ * 初始化路由：先验证密码，再绑定事件并渲染当前页面
  */
 export const initRouter = () => {
-  window.addEventListener("hashchange", render);
-  render();
+  renderGuarded();
+  window.addEventListener("hashchange", async () => {
+    if (!authenticated) {
+      await lockScreen();
+    }
+    if (authenticated) render();
+  });
 };

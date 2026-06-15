@@ -92,6 +92,8 @@ export const renderLock = (container) => {
       if (h === CORRECT_HASH) {
         localStorage.setItem(UNLOCKED_KEY, "1");
         sessionStorage.setItem(UNLOCKED_KEY, "1");
+        // 保存密码哈希作为设备标识（用于云端数据隔离）
+        localStorage.setItem("ustime_device_key", h);
         resolve(true);
       } else {
         if (errorEl) errorEl.classList.remove("hidden");

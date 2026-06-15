@@ -11,6 +11,7 @@
 import { load, remove, save } from "../store.js";
 import { getOptions, getAnniversaries, getTravels, formatAnniversaryDateFull } from "../utils/helpers.js";
 import { getTheme, setTheme, getThemeList } from "../main.js";
+import { uploadToCloud, downloadFromCloud, getCloudInfo, getLastSyncTime } from "../utils/supabase.js";
 
 /** 决策选项类别配置 */
 const OPTION_CATEGORIES = [
@@ -55,6 +56,17 @@ const escHtml = (str) => {
  */
 const formatTime = (ts) => {
   const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+/**
+ * 格式化 ISO 时间字符串为可读格式
+ * @param {string} isoStr
+ * @returns {string}
+ */
+const formatCloudTime = (isoStr) => {
+  const d = new Date(isoStr);
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
@@ -334,6 +346,30 @@ const html = (stats) => {
     ${renderOptionSection()}
     ${renderAnniversarySection()}
     ${renderDataSection(stats)}
+
+    <!-- 云端同步 -->
+    <div class="mb-6">
+      <h2 class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+        <span class="h-px flex-1 bg-slate-800"></span>
+        ☁️ 云端同步
+        <span class="h-px flex-1 bg-slate-800"></span>
+      </h2>
+      <div class="rounded-xl border border-slate-700 bg-slate-900 p-4 space-y-3">
+        <p class="text-xs text-slate-500">将数据备份到 Supabase 云端，可在不同设备间同步</p>
+        <p id="settings-cloud-info" class="text-center text-xs text-slate-600">查询中...</p>
+        <div class="flex gap-2">
+          <button id="settings-btn-cloud-upload"
+            class="flex-1 flex items-center justify-center gap-2 rounded-lg border border-sky-700 bg-sky-900/30 px-3 py-2.5 text-sm font-semibold text-sky-300 hover:bg-sky-900/50 hover:border-sky-600 active:scale-[0.98] transition-all">
+            ☁️ 上传到云端
+          </button>
+          <button id="settings-btn-cloud-download"
+            class="flex-1 flex items-center justify-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:border-slate-500 active:scale-[0.98] transition-all">
+            📥 从云端恢复
+          </button>
+        </div>
+        <p id="settings-cloud-status" class="text-center text-xs text-slate-600 hidden"></p>
+      </div>
+    </div>
 
     <!-- 操作按钮区 -->
     <div class="space-y-3 mt-6">
@@ -832,6 +868,131 @@ const bindEvents = () => {
       if (key && id) deleteItem(key, id);
     });
   });
+
+  // 页面加载时查询云端状态
+  (async () => {
+    const cloudInfo = document.getElementById("settings-cloud-info");
+    const localSync = getLastSyncTime();
+    const cloudResult = await getCloudInfo();
+
+    if (!cloudInfo) return;
+
+    const localStr = localSync
+      ? `本地上次同步：${formatCloudTime(localSync)}`
+      : "本地：从未同步";
+    const cloudStr = cloudResult.ok && cloudResult.updatedAt
+      ? `云端更新：${formatCloudTime(cloudResult.updatedAt)}`
+      : "云端：暂无数据";
+
+    cloudInfo.textContent = `${localStr}　|　${cloudStr}`;
+
+    // 云端有新数据时高亮提示
+    if (cloudResult.ok && cloudResult.updatedAt && localSync && cloudResult.updatedAt > localSync) {
+      cloudInfo.className = "text-center text-xs text-amber-400";
+      cloudInfo.textContent += "　⚠️ 云端有新数据";
+    } else {
+      cloudInfo.className = "text-center text-xs text-slate-500";
+    }
+  })();
+
+  // 云端上传
+  const btnCloudUpload = document.getElementById("settings-btn-cloud-upload");
+  const cloudStatus = document.getElementById("settings-cloud-status");
+  const cloudInfoEl = document.getElementById("settings-cloud-info");
+  if (btnCloudUpload) {
+    btnCloudUpload.addEventListener("click", async () => {
+      btnCloudUpload.disabled = true;
+      btnCloudUpload.innerHTML = "⏳ 上传中...";
+      if (cloudStatus) {
+        cloudStatus.textContent = "";
+        cloudStatus.classList.add("hidden");
+      }
+      const result = await uploadToCloud();
+      btnCloudUpload.disabled = false;
+      btnCloudUpload.innerHTML = "☁️ 上传到云端";
+      if (cloudStatus) {
+        cloudStatus.classList.remove("hidden");
+        if (result.ok) {
+          const timeStr = result.updatedAt ? formatCloudTime(result.updatedAt) : "";
+          cloudStatus.textContent = `✅ 上传成功 ${timeStr}`;
+          cloudStatus.className = "text-center text-xs text-emerald-400";
+          // 刷新状态行
+          if (cloudInfoEl) {
+            cloudInfoEl.textContent = `本地上次同步：${timeStr}　|　云端更新：${timeStr}`;
+            cloudInfoEl.className = "text-center text-xs text-slate-500";
+          }
+        } else {
+          cloudStatus.textContent = `❌ ${result.error || "上传失败"}`;
+          cloudStatus.className = "text-center text-xs text-rose-400";
+        }
+        setTimeout(() => cloudStatus.classList.add("hidden"), 3000);
+      }
+    });
+  }
+
+  // 云端下载
+  const btnCloudDownload = document.getElementById("settings-btn-cloud-download");
+  if (btnCloudDownload) {
+    btnCloudDownload.addEventListener("click", async () => {
+      // 先查询云端信息
+      btnCloudDownload.disabled = true;
+      btnCloudDownload.innerHTML = "⏳ 查询中...";
+      const info = await getCloudInfo();
+      btnCloudDownload.disabled = false;
+      btnCloudDownload.innerHTML = "📥 从云端恢复";
+
+      if (!info.ok || !info.updatedAt) {
+        if (cloudStatus) {
+          cloudStatus.textContent = "❌ 云端暂无数据，请先上传备份";
+          cloudStatus.className = "text-center text-xs text-rose-400";
+          cloudStatus.classList.remove("hidden");
+          setTimeout(() => cloudStatus.classList.add("hidden"), 3000);
+        }
+        return;
+      }
+
+      const cloudTime = formatCloudTime(info.updatedAt);
+      const localSync = getLastSyncTime();
+      let confirmMsg = `确定从云端恢复数据吗？\n\n云端数据时间：${cloudTime}`;
+      if (localSync && info.updatedAt <= localSync) {
+        confirmMsg += `\n\n⚠️ 云端数据不新于本地（本地同步于 ${formatCloudTime(localSync)}），仍要恢复吗？`;
+      }
+      confirmMsg += "\n\n此操作将覆盖本地所有数据。";
+
+      if (!confirm(confirmMsg)) return;
+
+      btnCloudDownload.disabled = true;
+      btnCloudDownload.innerHTML = "⏳ 下载中...";
+      if (cloudStatus) {
+        cloudStatus.textContent = "";
+        cloudStatus.classList.add("hidden");
+      }
+      const result = await downloadFromCloud();
+      btnCloudDownload.disabled = false;
+      btnCloudDownload.innerHTML = "📥 从云端恢复";
+      if (cloudStatus) {
+        cloudStatus.classList.remove("hidden");
+        if (result.ok) {
+          cloudStatus.textContent = `✅ 已恢复 ${result.imported || 0} 项数据`;
+          cloudStatus.className = "text-center text-xs text-emerald-400";
+          // 更新本地同步时间
+          if (result.updatedAt) {
+            localStorage.setItem("ustime_last_sync", result.updatedAt);
+          }
+          // 刷新状态行 + 页面
+          if (cloudInfoEl) {
+            cloudInfoEl.textContent = `本地上次同步：${cloudTime}　|　云端更新：${cloudTime}`;
+            cloudInfoEl.className = "text-center text-xs text-slate-500";
+          }
+          setTimeout(() => refreshPage(), 500);
+        } else {
+          cloudStatus.textContent = `❌ ${result.error || "下载失败"}`;
+          cloudStatus.className = "text-center text-xs text-rose-400";
+        }
+        setTimeout(() => cloudStatus.classList.add("hidden"), 3000);
+      }
+    });
+  }
 
   // 导出
   const btnExport = document.getElementById("settings-btn-export");

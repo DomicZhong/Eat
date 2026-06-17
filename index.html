@@ -3,45 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="UsTime — 消除决策疲劳，增强情感连接" />
-    <title>UsTime</title>
+    <meta name="description" content="吃什么 — 美食随机决策器" />
+    <title>吃什么</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/styles/main.css" />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
-  <body class="min-h-screen font-sans antialiased flex flex-col" style="background-color:var(--bg);color:var(--text);">
-    <div id="app" class="mx-auto w-full max-w-lg flex-1 px-4 py-6">
-      <!-- 页面内容由 router.js 渲染到这里 -->
-    </div>
-    <!-- 底部导航栏 -->
-    <nav class="sticky bottom-0 border-t backdrop-blur" style="border-color:var(--border-light);background-color:color-mix(in srgb, var(--bg-nav) 95%, transparent);">
-      <div class="mx-auto flex max-w-lg items-center justify-around py-2.5">
-        <a href="#/decider" id="nav-decider" class="nav-link flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          🎲
-          <span>决策</span>
-        </a>
-        <a href="#/jar" id="nav-jar" class="nav-link relative flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          🏺
-          <span>储蓄罐</span>
-        </a>
-        <a href="#/quests" id="nav-quests" class="nav-link flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          📋
-          <span>清单</span>
-        </a>
-        <a href="#/anniversary" id="nav-anniversary" class="nav-link flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          💕
-          <span>纪念日</span>
-        </a>
-        <a href="#/travel" id="nav-travel" class="nav-link flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          🌍
-          <span>旅行</span>
-        </a>
-        <a href="#/settings" id="nav-settings" class="nav-link flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] transition-colors">
-          ⚙️
-          <span>数据</span>
-        </a>
-      </div>
-    </nav>
+  <body class="min-h-screen font-sans antialiased flex flex-col">
+    <div id="app" class="mx-auto w-full max-w-lg flex-1 px-4 py-8"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

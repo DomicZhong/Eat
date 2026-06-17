@@ -1,104 +1,319 @@
 /**
- * 随机决策器 (The Decider) — 核心功能组件
+ * 吃什么 — 美食随机决策器
  *
- * UI 结构:
- * - 结果展示区 + 重抽/复制按钮
- * - 5 个分类按钮 (3+2 Grid)
- * - 全局随机按钮
- *
- * 特性: 7天历史防重复提示、快速重抽(排除当前)、一键复制
+ * 特性:
+ * - 按菜系分类Tab筛选 + 全部模式
+ * - 从当前分类随机抽取
+ * - 7天历史防重复提示
+ * - 快速重抽（排除当前结果）
+ * - 按分类增删改美食选项
  */
-import { options, randomPick, categoryEmoji } from "../utils/helpers.js";
+import { CATEGORIES, getAllFoods, getFoodsByCategory, saveAllFoods, getAllRestaurants, getRestaurantsByCategory, saveAllRestaurants, randomPick } from "../utils/helpers.js";
 import { record, checkRecent } from "../utils/history.js";
 
-/** 主分类配置 */
-const CATEGORIES = [
-  { key: "food", label: "吃什么", emoji: "🍽️", color: "btn-rose" },
-  { key: "activity", label: "做什么", emoji: "🎯", color: "btn-emerald" },
-  { key: "reward", label: "奖励", emoji: "🎁", color: "btn-emerald" },
-  { key: "relationship", label: "情感", emoji: "💝", color: "btn-rose" },
-];
+/** 当前选中的分类 */
+var selectedCategory = "全部";
 
-/** 私密奖励（不参与 Random All） */
-const PRIVATE_CATEGORY = { key: "private", label: "私密", emoji: "🔥", color: "btn-violet" };
+/** 当前展示的结果 */
+var currentResult = "";
 
-/** 当前展示的结果状态（用于重抽和复制） */
-let currentResult = { text: "", category: null, value: null, rawText: "", lastAll: null };
+/** 当前模式: "food" 菜式 | "restaurant" 餐厅 */
+var mode = "restaurant";
+
+/** 美食库展开状态 */
+var listExpanded = false;
+
+/** 餐厅库展开状态 */
+var restListExpanded = false;
+
+/** 当前主题 */
+var theme = "night";
+
+/** 各主题按钮的高亮类 */
+var themeActiveClass = {
+  night: "bg-indigo-600 text-white",
+  sakura: "bg-rose-400 text-white",
+  forest: "bg-emerald-600 text-white",
+};
+var themeInactiveClass = "text-slate-500 hover:text-slate-300";
+
+/** 各主题下餐厅/菜式的配色方案 */
+var themeColorSchemes = {
+  night: {
+    rest: { bg: "bg-indigo-600", hover: "hover:bg-indigo-500", name: "indigo", hex: "600" },
+    food: { bg: "bg-rose-600", hover: "hover:bg-rose-500", name: "rose", hex: "600" },
+  },
+  sakura: {
+    rest: { bg: "bg-rose-500", hover: "hover:bg-rose-400", name: "rose", hex: "500" },
+    food: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600" },
+  },
+  forest: {
+    rest: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600" },
+    food: { bg: "bg-amber-600", hover: "hover:bg-amber-500", name: "amber", hex: "600" },
+  },
+};
+
+/** 获取当前主题和模式下对应的高亮色 */
+var getAccent = function () {
+  var isRest = mode === "restaurant";
+  var scheme = themeColorSchemes[theme];
+  return isRest ? scheme.rest : scheme.food;
+};
+
+/** 切换主题 */
+var switchTheme = function (t) {
+  if (theme === t) return;
+  theme = t;
+  localStorage.setItem("theme", theme);
+  document.documentElement.setAttribute("data-theme", theme);
+  // 更新主题按钮高亮
+  var btns = document.querySelectorAll(".theme-btn");
+  for (var i = 0; i < btns.length; i++) {
+    var btn = btns[i];
+    var btnTheme = btn.id.replace("theme-", "");
+    if (btnTheme === theme) {
+      btn.className = "theme-btn rounded-full px-2.5 py-1 text-xs transition-all " + themeActiveClass[theme];
+    } else {
+      btn.className = "theme-btn rounded-full px-2.5 py-1 text-xs transition-all " + themeInactiveClass;
+    }
+  }
+  // 更新模式按钮、抽取按钮、分类 Tab 的配色
+  updateAccentElements();
+};
+
+/** 更新所有依赖主题和模式的按钮/元素配色 */
+var updateAccentElements = function () {
+  var isRest = mode === "restaurant";
+  var restScheme = themeColorSchemes[theme].rest;
+  var foodScheme = themeColorSchemes[theme].food;
+  var accent = getAccent();
+
+  // 模式切换按钮
+  var baseMode = "decider-mode-btn rounded-full px-5 py-1.5 text-xs font-semibold transition-all";
+  var btnRest = document.getElementById("decider-mode-restaurant");
+  var btnFood = document.getElementById("decider-mode-food");
+  if (btnRest) {
+    btnRest.className = baseMode + " " + (isRest ? restScheme.bg + " text-white" : "text-slate-500 hover:text-slate-300");
+  }
+  if (btnFood) {
+    btnFood.className = baseMode + " " + (isRest ? "text-slate-500 hover:text-slate-300" : foodScheme.bg + " text-white");
+  }
+
+  // 抽取按钮
+  var btnRoll = document.getElementById("decider-btn-roll");
+  if (btnRoll) {
+    btnRoll.className = "w-full rounded-xl " + accent.bg + " " + accent.hover + " px-6 py-5 text-lg font-bold text-white shadow-lg active:scale-[0.98] transition-all mb-6";
+  }
+
+  // 分类 Tab（只更新选中态）
+  var tabs = document.querySelectorAll(".decider-tab");
+  for (var i = 0; i < tabs.length; i++) {
+    var tab = tabs[i];
+    if (tab.dataset.cat === selectedCategory) {
+      tab.className = "decider-tab rounded-full border px-4 py-1.5 text-xs font-semibold transition-all " + accent.bg + " text-white border-" + accent.name + "-" + accent.hex;
+    }
+  }
+};
 
 /**
- * 构建 Decider 组件的 HTML 结构
- * @returns {string}
+ * 转义 HTML
  */
-const html = () => `
-  <div class="page-enter">
-    <h1 class="text-2xl font-bold text-center mb-4 tracking-wide">
-      🎲 <span class="text-emerald-400">Us</span><span class="text-rose-400">Time</span>
-    </h1>
-
-    <!-- 结果展示区（固定最小高度，避免文本长短跳动） -->
-    <div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-center min-h-[144px] flex flex-col items-center justify-center">
-      <p id="decider-result-text" class="text-xl leading-relaxed text-slate-200">
-        点击下方按钮开始随机决策 🎯
-      </p>
-      <p id="decider-result-sub" class="mt-1 text-xs text-slate-500 hidden"></p>
-      <p id="decider-result-hint" class="mt-1 text-xs text-amber-400 hidden"></p>
-    </div>
-
-    <!-- 结果操作按钮（重抽 + 复制） -->
-    <div id="decider-actions" class="mb-6 flex justify-center gap-3 hidden">
-      <button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
-        🔄 换一个
-      </button>
-      <button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">
-        📋 复制
-      </button>
-    </div>
-
-    <!-- 分类按钮 (3+2 布局) -->
-    <div class="grid grid-cols-3 gap-2 mb-2">
-      ${CATEGORIES.slice(0, 3).map((c) => `
-        <button
-          id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-2 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
-          data-category="${c.key}"
-        >
-          ${c.emoji} ${c.label}
-        </button>
-      `).join("")}
-    </div>
-    <div class="grid grid-cols-2 gap-2 mb-3">
-      ${CATEGORIES.slice(3, 4).map((c) => `
-        <button
-          id="decider-btn-${c.key}"
-          class="${c.color} rounded-xl px-3 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
-          data-category="${c.key}"
-        >
-          ${c.emoji} ${c.label}
-        </button>
-      `).join("")}
-      <button
-        id="decider-btn-private"
-        class="btn-violet rounded-xl px-3 py-3.5 text-sm font-semibold shadow-lg active:scale-95 transition-transform"
-      >
-        🔥🔥🔥
-      </button>
-    </div>
-
-    <!-- 全局随机按钮 -->
-    <button
-      id="decider-btn-all"
-      class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-rose-600 px-4 py-3.5 text-base font-bold text-white shadow-lg hover:from-emerald-500 hover:to-rose-500 active:scale-[0.98] transition-all"
-    >
-      🎲 Random All
-    </button>
-  </div>
-`;;
+var escHtml = function (str) {
+  var map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return str.replace(/[&<>"']/g, function (c) { return map[c]; });
+};
 
 /**
- * 触发结果区弹跳动画
+ * 根据当前模式获取数据源
  */
-const bounceResult = () => {
-  const el = document.getElementById("decider-result");
+var getItemsByCategory = function (cat) {
+  return mode === "restaurant" ? getRestaurantsByCategory(cat) : getFoodsByCategory(cat);
+};
+var getAllItems = function () {
+  return mode === "restaurant" ? getAllRestaurants() : getAllFoods();
+};
+var saveAllItems = function (data) {
+  return mode === "restaurant" ? saveAllRestaurants(data) : saveAllFoods(data);
+};
+
+// ====================== HTML 生成 ======================
+
+/**
+ * 生成分类 Tab HTML
+ */
+var tabsHtml = function () {
+  var tabs = ["全部"];
+  var cats = Object.keys(CATEGORIES);
+  for (var i = 0; i < cats.length; i++) {
+    tabs.push(cats[i]);
+  }
+
+  var parts = ['<div class="mb-6 flex flex-wrap justify-center gap-2">'];
+  for (var t = 0; t < tabs.length; t++) {
+    var tab = tabs[t];
+    var isActive = tab === selectedCategory;
+    var info = CATEGORIES[tab];
+    var label = info ? (info.emoji + " " + tab) : ("🍽️ " + tab);
+    var accent = getAccent();
+    var activeClass = isActive
+      ? accent.bg + " text-white border-" + accent.name + "-" + accent.hex
+      : "bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500";
+    parts.push(
+      '<button class="decider-tab rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ' + activeClass + '" data-cat="' + tab + '">' + label + "</button>"
+    );
+  }
+  parts.push("</div>");
+  return parts.join("");
+};
+
+/**
+ * 生成单个分类区块的 HTML
+ */
+var categoryBlockHtml = function (catName, items, blockMode) {
+  var info = CATEGORIES[catName] || { emoji: "🍽️" };
+  var isRest = blockMode === "restaurant";
+  var itemLabel = isRest ? "餐厅" : "菜式";
+  var rows = [];
+  for (var i = 0; i < items.length; i++) {
+    rows.push(
+      '<div class="flex items-center gap-2 border-b border-slate-800 px-3 py-2 group">' +
+      '<span class="text-xs text-slate-600 w-5 text-right flex-shrink-0">' + (i + 1) + "</span>" +
+      '<span class="flex-1 text-sm text-slate-300 truncate">' + escHtml(items[i]) + "</span>" +
+      '<span class="decider-item-actions flex gap-1">' +
+      '<button class="decider-edit-item text-slate-500 hover:text-emerald-400 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" data-cat="' + catName + '" data-idx="' + i + '">&#9998;</button>' +
+      '<button class="decider-del-item text-slate-500 hover:text-rose-400 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" data-cat="' + catName + '" data-idx="' + i + '">&#10005;</button>' +
+      "</span>" +
+      "</div>"
+    );
+  }
+  if (items.length === 0) {
+    rows.push('<div class="px-3 py-3 text-center text-xs text-slate-600">暂无</div>');
+  }
+
+  return [
+    '<div class="decider-cat-section border-b border-slate-700 last:border-b-0">',
+    '<div class="flex items-center justify-between px-4 py-2 bg-slate-800/50">',
+    '<span class="text-xs font-semibold text-slate-400">' + info.emoji + " " + catName + ' · <span class="text-slate-500">' + items.length + " 项</span></span>",
+    '<button class="decider-toggle-cat text-xs text-slate-500 hover:text-slate-300 transition-colors" data-cat="' + catName + '">展开 ▾</button>',
+    "</div>",
+    '<div class="decider-cat-body hidden" data-cat-body="' + catName + '">',
+    rows.join(""),
+    // 添加输入行
+    '<div class="border-t border-slate-800 p-3">',
+    '<div class="flex gap-2">',
+    '<input type="text" class="decider-add-input flex-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-rose-500 placeholder-slate-600" placeholder="添加' + catName + itemLabel + '..." data-cat="' + catName + '" />',
+    '<button class="decider-btn-add-cat rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all whitespace-nowrap" data-cat="' + catName + '">+ 添加</button>',
+    "</div>",
+    "</div>",
+    "</div>",
+    "</div>",
+  ].join("");
+};
+
+/**
+ * 生成美食库编辑面板 HTML
+ */
+var editPanelHtml = function (panelMode) {
+  var isRest = panelMode === "restaurant";
+  var all = isRest ? getAllRestaurants() : getAllFoods();
+  var panelIcon = isRest ? "📍" : "🍽️";
+  var panelLabel = isRest ? "餐厅库" : "美食库";
+  var expanded = isRest ? restListExpanded : listExpanded;
+  var toggleId = isRest ? "decider-btn-toggle-rest-list" : "decider-btn-toggle-list";
+  var listId = isRest ? "decider-rests-list" : "decider-foods-list";
+  var cats = Object.keys(CATEGORIES);
+  var totalCount = 0;
+  var blocks = [];
+  for (var i = 0; i < cats.length; i++) {
+    var c = cats[i];
+    var items = all[c] || [];
+    totalCount += items.length;
+    blocks.push(categoryBlockHtml(c, items, panelMode));
+  }
+
+  return [
+    '<div class="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">',
+    '<div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">',
+    '<span class="text-sm text-slate-400">' + panelIcon + " " + panelLabel + ' · ' + totalCount + " 项</span>",
+    '<button id="' + toggleId + '" class="text-xs text-slate-500 hover:text-emerald-400 transition-colors">' + (expanded ? "收起 ▴" : "查看全部 ▾") + "</button>",
+    "</div>",
+    '<div id="' + listId + '" class="max-h-[60vh] overflow-y-auto' + (expanded ? "" : " hidden") + '">',
+    blocks.join(""),
+    "</div>",
+    "</div>",
+  ].join("");
+};
+
+/**
+ * 构建完整 HTML
+ */
+var html = function () {
+  var isRest = mode === "restaurant";
+  return [
+    '<div class="page-enter relative">',
+
+    // 主题切换 — 右上角
+    '<div class="absolute top-0 right-0">',
+    '<div class="inline-flex rounded-full border border-slate-700 bg-slate-800 p-0.5">',
+    '<button id="theme-night" class="theme-btn rounded-full px-2.5 py-1 text-xs transition-all ' + (theme === "night" ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300") + '">🌙</button>',
+    '<button id="theme-sakura" class="theme-btn rounded-full px-2.5 py-1 text-xs transition-all ' + (theme === "sakura" ? "bg-rose-400 text-white" : "text-slate-500 hover:text-slate-300") + '">🌸</button>',
+    '<button id="theme-forest" class="theme-btn rounded-full px-2.5 py-1 text-xs transition-all ' + (theme === "forest" ? "bg-emerald-600 text-white" : "text-slate-500 hover:text-slate-300") + '">🌿</button>',
+    "</div>",
+    "</div>",
+
+    '<h1 class="text-3xl font-bold text-center mb-2 tracking-wide text-slate-100">',
+    "🍽️ 吃什么",
+    "</h1>",
+
+    // 模式切换
+    '<div class="mb-5 flex justify-center">',
+    '<div class="inline-flex rounded-full border border-slate-700 bg-slate-800 p-0.5">',
+    '<button id="decider-mode-restaurant" class="decider-mode-btn rounded-full px-5 py-1.5 text-xs font-semibold transition-all ' + (isRest ? themeColorSchemes[theme].rest.bg + " text-white" : "text-slate-500 hover:text-slate-300") + '">📍 餐厅</button>',
+    '<button id="decider-mode-food" class="decider-mode-btn rounded-full px-5 py-1.5 text-xs font-semibold transition-all ' + (isRest ? "text-slate-500 hover:text-slate-300" : themeColorSchemes[theme].food.bg + " text-white") + '">🍽️ 菜式</button>',
+    "</div>",
+    "</div>",
+
+    // 分类 Tab
+    tabsHtml(),
+
+    // 结果展示区
+    '<div id="decider-result" class="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-6 text-center min-h-[120px] flex flex-col items-center justify-center">',
+    '<p id="decider-result-text" class="text-2xl leading-relaxed text-slate-200">',
+    isRest ? "点下面按钮，帮你抽一间餐厅 📍" : "点下面按钮，帮你决定吃什么 🎯",
+    "</p>",
+    '<p id="decider-result-hint" class="mt-2 text-xs text-amber-400 hidden"></p>',
+    '<p id="decider-result-cat" class="mt-1 text-xs text-slate-500 hidden"></p>',
+    "</div>",
+
+    // 操作按钮
+    '<div id="decider-actions" class="mb-6 flex justify-center gap-3 hidden">',
+    '<button id="decider-btn-reroll" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">',
+    "🔄 换一个",
+    "</button>",
+    '<button id="decider-btn-copy" class="flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">',
+    "📋 复制",
+    "</button>",
+    "</div>",
+
+    // 随机按钮
+    '<button id="decider-btn-roll" class="w-full rounded-xl ' + getAccent().bg + " " + getAccent().hover + ' px-6 py-5 text-lg font-bold text-white shadow-lg active:scale-[0.98] transition-all mb-6">',
+    (isRest ? "🎲 " : "🎲 ") + (selectedCategory === "全部" ? (isRest ? "今天去哪吃？" : "今天吃什么？") : (isRest ? "去哪吃" + selectedCategory + "？" : "来份" + selectedCategory + "？")),
+    "</button>",
+
+    // 编辑面板
+    editPanelHtml(mode),
+
+    "</div>",
+  ].join("");
+};
+
+// ====================== 交互逻辑 ======================
+
+/**
+ * 触发弹跳动画
+ */
+var bounceResult = function () {
+  var el = document.getElementById("decider-result");
   if (!el) return;
   el.classList.remove("result-bounce");
   void el.offsetWidth;
@@ -106,149 +321,101 @@ const bounceResult = () => {
 };
 
 /**
- * 显示操作按钮（重抽 + 复制）
+ * 显示操作按钮
  */
-const showActions = () => {
-  const actions = document.getElementById("decider-actions");
+var showActions = function () {
+  var actions = document.getElementById("decider-actions");
   if (actions) actions.classList.remove("hidden");
 };
 
 /**
- * 更新结果展示区
- * @param {string} html - 主文本（支持 HTML）
- * @param {string} [sub] - 副标题
- * @param {string|null} [category] - 类别
- * @param {string|null} [value] - 选中的值
- * @param {string} [rawText] - 纯文本版（用于复制）
+ * 刷新整个组件
  */
-const updateResult = (html, sub = "", category = null, value = null, rawText = "") => {
-  const main = document.getElementById("decider-result-text");
-  const secondary = document.getElementById("decider-result-sub");
-  if (main) main.innerHTML = html;
-  if (secondary) {
-    secondary.textContent = sub;
-    secondary.classList.toggle("hidden", !sub);
+var refresh = function () {
+  var container = document.querySelector("#app");
+  if (!container) return;
+  render(container);
+};
+
+/**
+ * 切换分类
+ */
+var switchCategory = function (cat) {
+  if (selectedCategory === cat) return;
+  selectedCategory = cat;
+  currentResult = "";
+  refresh();
+};
+
+/**
+ * 执行随机
+ */
+var doRoll = function (exclude) {
+  if (!exclude) exclude = [];
+  var items = getItemsByCategory(selectedCategory);
+  var candidates = items.filter(function (f) { return exclude.indexOf(f) === -1; });
+  var pool = candidates.length > 0 ? candidates : items;
+  var picked = randomPick(pool);
+  if (!picked) return;
+
+  currentResult = picked;
+  var isRest = mode === "restaurant";
+  record(isRest ? "restaurant" : "food", picked);
+
+  var main = document.getElementById("decider-result-text");
+  if (main) {
+    var icon = isRest ? "📍" : "🍽️";
+    var color = isRest ? "text-emerald-400" : "text-rose-400";
+    main.innerHTML = icon + ' <span class="' + color + ' font-bold">' + escHtml(picked) + "</span>";
   }
-  currentResult = { text: html, category, value, rawText };
+
   showActions();
   bounceResult();
-  if (category && value) {
-    const hint = checkRecent(category, value);
-    const hintEl = document.getElementById("decider-result-hint");
-    if (hintEl && hint.count > 0) {
-      hintEl.textContent = `最近 ${hint.lastDate} 已选过，共 ${hint.count} 次`;
-      hintEl.classList.remove("hidden");
-    } else if (hintEl) {
-      hintEl.classList.add("hidden");
-    }
+
+  // 显示分类标签
+  var catEl = document.getElementById("decider-result-cat");
+  if (catEl && selectedCategory !== "全部") {
+    var info = CATEGORIES[selectedCategory];
+    catEl.textContent = (info ? info.emoji : "") + " " + selectedCategory;
+    catEl.classList.remove("hidden");
+  } else if (catEl) {
+    catEl.classList.add("hidden");
+  }
+
+  var hint = checkRecent(isRest ? "restaurant" : "food", picked);
+  var hintEl = document.getElementById("decider-result-hint");
+  if (hintEl && hint.count > 1) {
+    hintEl.textContent = "最近 " + hint.lastDate + " 已选过，共 " + hint.count + " 次";
+    hintEl.classList.remove("hidden");
+  } else if (hintEl) {
+    hintEl.classList.add("hidden");
   }
 };
 
 /**
- * 从数组中排除某些值后随机选取
- * @param {string[]} arr - 选项数组
- * @param {string[]} exclude - 要排除的值
- * @returns {string}
+ * 复制结果
  */
-const randomPickExcluding = (arr, exclude) => {
-  const candidates = arr.filter((v) => !exclude.includes(v));
-  // 如果全部被排除，回退到全部选项
-  const pool = candidates.length > 0 ? candidates : arr;
-  return randomPick(pool);
-};
-
-/**
- * 分类随机
- * @param {string} category - 类别 key
- */
-const handleCategory = (category) => {
-  const picked = randomPick(options[category]);
-  const emoji = categoryEmoji(category);
-  const allCats = [...CATEGORIES, PRIVATE_CATEGORY];
-  const label = allCats.find((c) => c.key === category)?.label || category;
-  record(category, picked);
-  updateResult(`${emoji} ${picked}`, `从「${label}」中随机选中`, category, picked);
-};
-
-/**
- * 分类重抽（排除当前值）
- * @param {string} category
- * @param {string} excludeValue
- */
-const handleCategoryReroll = (category, excludeValue) => {
-  const picked = randomPickExcluding(options[category], [excludeValue]);
-  const emoji = categoryEmoji(category);
-  const allCats = [...CATEGORIES, PRIVATE_CATEGORY];
-  const label = allCats.find((c) => c.key === category)?.label || category;
-  record(category, picked);
-  updateResult(`${emoji} ${picked}`, `从「${label}」重抽 · 已排除上次结果`, category, picked);
-};
-
-/**
- * 全局随机
- */
-const handleRandomAll = () => {
-  const food = randomPick(options.food);
-  const activity = randomPick(options.activity);
-  const reward = randomPick(options.reward);
-  const relationship = randomPick(options.relationship);
-  record("food", food);
-  record("activity", activity);
-  record("reward", reward);
-  record("relationship", relationship);
-
-  const htmlText = `<span>🍽️ ${food}</span><br><span>🎯 ${activity}</span><br><span>🎁 ${reward}</span><br><span>💝 ${relationship}</span>`;
-  const plainText = `${food}，${activity}，${reward}，${relationship}`;
-  currentResult.lastAll = { food, activity, reward, relationship };
-  updateResult(htmlText, "一键随机全局决策", "all", null, plainText);
-};
-
-/**
- * 全局重抽（每个类别排除当前值）
- */
-const handleRandomAllReroll = () => {
-  const last = currentResult.lastAll;
-  const food = randomPickExcluding(options.food, last ? [last.food] : []);
-  const activity = randomPickExcluding(options.activity, last ? [last.activity] : []);
-  const reward = randomPickExcluding(options.reward, last ? [last.reward] : []);
-  const relationship = randomPickExcluding(options.relationship, last ? [last.relationship] : []);
-  record("food", food);
-  record("activity", activity);
-  record("reward", reward);
-  record("relationship", relationship);
-
-  const htmlText = `<span>🍽️ ${food}</span><br><span>🎯 ${activity}</span><br><span>🎁 ${reward}</span><br><span>💝 ${relationship}</span>`;
-  const plainText = `${food}，${activity}，${reward}，${relationship}`;
-  currentResult.lastAll = { food, activity, reward, relationship };
-  updateResult(htmlText, "重抽 · 已排除上次各选项", "all", null, plainText);
-};
-
-/**
- * 复制结果到剪贴板
- */
-const handleCopy = async () => {
-  const text = currentResult.rawText || currentResult.text || "";
-  if (!text) return;
-
+var handleCopy = function () {
+  if (!currentResult) return;
   try {
-    await navigator.clipboard.writeText(text);
-    const btn = document.getElementById("decider-btn-copy");
-    if (btn) {
-      const original = btn.innerHTML;
-      btn.innerHTML = "✅ 已复制";
-      btn.classList.add("text-emerald-400");
-      setTimeout(() => {
-        btn.innerHTML = original;
-        btn.classList.remove("text-emerald-400");
-      }, 1500);
-    }
-  } catch {
-    // fallback: 选中文本让用户手动复制
-    const range = document.createRange();
-    const textEl = document.getElementById("decider-result-text");
+    navigator.clipboard.writeText(currentResult).then(function () {
+      var btn = document.getElementById("decider-btn-copy");
+      if (btn) {
+        var orig = btn.innerHTML;
+        btn.innerHTML = "✅ 已复制";
+        btn.classList.add("text-emerald-400");
+        setTimeout(function () {
+          btn.innerHTML = orig;
+          btn.classList.remove("text-emerald-400");
+        }, 1500);
+      }
+    });
+  } catch (_e) {
+    var textEl = document.getElementById("decider-result-text");
     if (textEl) {
+      var range = document.createRange();
       range.selectNodeContents(textEl);
-      const sel = window.getSelection();
+      var sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
     }
@@ -256,61 +423,230 @@ const handleCopy = async () => {
 };
 
 /**
- * 重抽按钮点击处理（根据当前结果类型分发）
+ * 添加项目到指定分类（根据 mode 自动选数据源）
  */
-const handleReroll = () => {
-  if (currentResult.category === "all") {
-    handleRandomAllReroll();
-  } else if (currentResult.category && currentResult.value) {
-    handleCategoryReroll(currentResult.category, currentResult.value);
-  }
+var addItem = function (catName, value) {
+  var v = value.trim();
+  if (!v) return;
+  var data = getAllItems();
+  if (!data[catName]) data[catName] = [];
+  data[catName].push(v);
+  saveAllItems(data);
+  refresh();
 };
 
 /**
- * 绑定事件监听器
+ * 删除指定分类中的项目
  */
-const bindEvents = () => {
-  // 主分类按钮
-  CATEGORIES.forEach((c) => {
-    const btn = document.getElementById(`decider-btn-${c.key}`);
-    if (btn) {
-      btn.addEventListener("click", () => handleCategory(c.key));
+var delItem = function (catName, idx) {
+  var data = getAllItems();
+  if (!data[catName] || data[catName].length <= 1) return;
+  data[catName].splice(idx, 1);
+  saveAllItems(data);
+  refresh();
+};
+
+/**
+ * 编辑指定分类中的项目
+ */
+var editItem = function (catName, idx, newVal) {
+  var v = newVal.trim();
+  if (!v) return;
+  var data = getAllItems();
+  data[catName][idx] = v;
+  saveAllItems(data);
+  refresh();
+};
+
+// ====================== 事件绑定 ======================
+
+/**
+ * 设置事件委托（一次性）
+ */
+var setupDelegation = function () {
+  var app = document.querySelector("#app");
+  if (!app || app._deciderDelegated) return;
+  app._deciderDelegated = true;
+
+  app.addEventListener("click", function (e) {
+    var target = e.target.closest("button");
+    if (!target) return;
+
+    // ===== 模式切换 =====
+    if (target.classList.contains("decider-mode-btn")) {
+      e.stopPropagation();
+      var newMode = target.id === "decider-mode-restaurant" ? "restaurant" : "food";
+      if (mode !== newMode) {
+        mode = newMode;
+        currentResult = "";
+        refresh();
+      }
+      return;
+    }
+
+    // ===== 主题切换 =====
+    if (target.classList.contains("theme-btn")) {
+      e.stopPropagation();
+      switchTheme(target.id.replace("theme-", ""));
+      return;
+    }
+
+    // ===== 分类 Tab 切换 =====
+    if (target.classList.contains("decider-tab")) {
+      e.stopPropagation();
+      switchCategory(target.dataset.cat);
+      return;
+    }
+
+    // ===== 展开/折叠分类区块 =====
+    if (target.classList.contains("decider-toggle-cat")) {
+      e.stopPropagation();
+      var catName = target.dataset.cat;
+      var body = document.querySelector('[data-cat-body="' + catName + '"]');
+      if (body) {
+        var isHidden = body.classList.contains("hidden");
+        body.classList.toggle("hidden");
+        target.textContent = isHidden ? "收起 ▴" : "展开 ▾";
+      }
+      return;
+    }
+
+    // ===== 按分类添加 =====
+    if (target.classList.contains("decider-btn-add-cat")) {
+      e.stopPropagation();
+      var cat = target.dataset.cat;
+      var input = document.querySelector('.decider-add-input[data-cat="' + cat + '"]');
+      if (input) {
+        addItem(cat, input.value);
+        input.value = "";
+      }
+      return;
+    }
+
+    // ===== 删除项目 =====
+    if (target.classList.contains("decider-del-item")) {
+      e.stopPropagation();
+      delItem(target.dataset.cat, parseInt(target.dataset.idx, 10));
+      return;
+    }
+
+    // ===== 编辑项目 — 进入内联编辑 =====
+    if (target.classList.contains("decider-edit-item")) {
+      e.stopPropagation();
+      var idx = parseInt(target.dataset.idx, 10);
+      var cat = target.dataset.cat;
+      var row = target.closest(".flex.items-center");
+      if (!row) return;
+      var textSpan = row.querySelector("span.flex-1");
+      if (!textSpan) return;
+
+      var currentVal = textSpan.textContent;
+      textSpan.innerHTML =
+        '<input type="text" class="decider-inline-edit w-full rounded border border-rose-600 bg-slate-800 px-2 py-1 text-sm text-slate-100 outline-none" value="' +
+        escHtml(currentVal) +
+        '" />';
+      var editInput = textSpan.querySelector("input");
+      if (editInput) {
+        editInput.focus();
+        editInput.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter") editItem(cat, idx, editInput.value);
+        });
+      }
+
+      var actionDiv = row.querySelector(".decider-item-actions");
+      if (actionDiv) {
+        actionDiv.innerHTML =
+          '<button class="decider-confirm-edit text-emerald-400 hover:text-emerald-300 text-xs px-1" data-cat="' + cat + '" data-idx="' + idx + '">&#10003;</button>' +
+          '<button class="decider-cancel-edit text-slate-400 hover:text-slate-300 text-xs px-1">&#10005;</button>';
+      }
+      return;
+    }
+
+    // ===== 确认编辑 =====
+    if (target.classList.contains("decider-confirm-edit")) {
+      e.stopPropagation();
+      var _idx = parseInt(target.dataset.idx, 10);
+      var _cat = target.dataset.cat;
+      var inlineInput = document.querySelector(".decider-inline-edit");
+      if (inlineInput) editItem(_cat, _idx, inlineInput.value);
+      return;
+    }
+
+    // ===== 取消编辑 =====
+    if (target.classList.contains("decider-cancel-edit")) {
+      e.stopPropagation();
+      refresh();
+      return;
     }
   });
-
-  // 私密奖励按钮
-  const btnPrivate = document.getElementById("decider-btn-private");
-  if (btnPrivate) {
-    btnPrivate.addEventListener("click", () => handleCategory(PRIVATE_CATEGORY.key));
-  }
-
-  // 全局随机按钮（不包含私密）
-  const btnAll = document.getElementById("decider-btn-all");
-  if (btnAll) {
-    btnAll.addEventListener("click", handleRandomAll);
-  }
-
-  // 重抽按钮
-  const btnReroll = document.getElementById("decider-btn-reroll");
-  if (btnReroll) {
-    btnReroll.addEventListener("click", handleReroll);
-  }
-
-  // 复制按钮
-  const btnCopy = document.getElementById("decider-btn-copy");
-  if (btnCopy) {
-    btnCopy.addEventListener("click", handleCopy);
-  }
 };
 
 /**
- * 渲染 Decider 组件到目标容器
- * @param {HTMLElement} container - 挂载目标
- * @returns {() => void} 销毁函数
+ * 绑定事件
  */
-export const render = (container) => {
-  currentResult = { text: "", category: null, value: null, rawText: "", lastAll: null };
+var bindEvents = function () {
+  setupDelegation();
+
+  // 随机按钮
+  var btnRoll = document.getElementById("decider-btn-roll");
+  if (btnRoll) btnRoll.addEventListener("click", function () { doRoll(); });
+
+  // 重抽按钮
+  var btnReroll = document.getElementById("decider-btn-reroll");
+  if (btnReroll) btnReroll.addEventListener("click", function () { doRoll([currentResult]); });
+
+  // 复制按钮
+  var btnCopy = document.getElementById("decider-btn-copy");
+  if (btnCopy) btnCopy.addEventListener("click", handleCopy);
+
+  // 展开/折叠列表（菜式 / 餐厅）
+  var bindToggle = function (toggleId, listId, expandedKey) {
+    var btn = document.getElementById(toggleId);
+    var list = document.getElementById(listId);
+    if (!btn || !list) return;
+    btn.addEventListener("click", function () {
+      if (expandedKey === "restListExpanded") {
+        restListExpanded = !restListExpanded;
+        list.classList.toggle("hidden");
+        btn.textContent = restListExpanded ? "收起 ▴" : "查看全部 ▾";
+      } else {
+        listExpanded = !listExpanded;
+        list.classList.toggle("hidden");
+        btn.textContent = listExpanded ? "收起 ▴" : "查看全部 ▾";
+      }
+    });
+  };
+  bindToggle("decider-btn-toggle-list", "decider-foods-list", "listExpanded");
+  bindToggle("decider-btn-toggle-rest-list", "decider-rests-list", "restListExpanded");
+
+  // 分类添加输入的 Enter 键
+  var inputs = document.querySelectorAll(".decider-add-input");
+  for (var i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        var btn = document.querySelector('.decider-btn-add-cat[data-cat="' + this.dataset.cat + '"]');
+        if (btn) btn.click();
+      }
+    });
+  }
+};
+
+// ====================== 渲染入口 ======================
+
+/**
+ * 渲染组件到容器
+ */
+export var initTheme = function () {
+  var saved = localStorage.getItem("theme");
+  if (saved && (saved === "night" || saved === "sakura" || saved === "forest")) {
+    theme = saved;
+  }
+  document.documentElement.setAttribute("data-theme", theme);
+};
+
+export var render = function (container) {
+  currentResult = "";
   container.innerHTML = html();
   bindEvents();
-  return () => {};
+  return function () {};
 };

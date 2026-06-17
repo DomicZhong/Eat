@@ -1,26 +1,6 @@
 @import "tailwindcss";
 
-/* ===== 主题系统：用 CSS 变量覆盖 Tailwind 颜色 token ===== */
-@theme {
-  --color-slate-950: var(--bg);
-  --color-slate-900: var(--bg-card);
-  --color-slate-800: var(--border-light);
-  --color-slate-700: var(--border);
-  --color-slate-600: var(--text-dim);
-  --color-slate-500: var(--text-muted);
-  --color-slate-400: var(--text-secondary);
-  --color-slate-300: var(--text-secondary);
-  --color-slate-200: var(--text);
-  --color-slate-100: var(--text);
-  --color-emerald-600: var(--accent-a);
-  --color-emerald-500: var(--accent-a);
-  --color-emerald-400: var(--accent-a);
-  --color-rose-600: var(--accent-b);
-  --color-rose-500: var(--accent-b);
-  --color-rose-400: var(--accent-b);
-}
-
-/* ===== 三套配色方案 ===== */
+/* ===== 配色：暗夜模式（默认） ===== */
 :root,
 [data-theme="night"] {
   --bg: #020617;
@@ -35,55 +15,49 @@
   --text-muted: #64748b;
   --text-dim: #475569;
   --accent-a: #10b981;
-  --accent-a-bg: #065f46;
-  --accent-a-text: #d1fae5;
-  --accent-a-border: #047857;
   --accent-b: #f43f5e;
-  --accent-b-bg: #9f1239;
-  --accent-b-text: #fce7f3;
-  --accent-b-border: #be123c;
-  --accent-violet: #7c3aed;
-  --accent-violet-bg: #5b21b6;
-  --accent-violet-text: #ede9fe;
-  --accent-violet-border: #6d28d9;
   --scrollbar-track: #1e293b;
   --scrollbar-thumb: #475569;
   --scrollbar-thumb-hover: #64748b;
-  --gradient-from: #10b981;
-  --gradient-to: #f43f5e;
 }
 
+/* ===== 暖樱主题 ===== */
 [data-theme="sakura"] {
-  --bg: #fff1f2;
-  --bg-card: #ffffff;
+  --bg: #fef2f2;
+  --bg-card: #fff1f2;
   --bg-card-hover: #ffe4e6;
-  --bg-input: #ffe4e6;
-  --bg-nav: #ffffff;
+  --bg-input: #fff1f2;
+  --bg-nav: #fff1f2;
   --border: #fecdd3;
   --border-light: #ffe4e6;
-  --text: #4a2e38;
-  --text-secondary: #9d6b7a;
-  --text-muted: #c49aa6;
-  --text-dim: #d4b0bc;
-  --accent-a: #0891b2;
-  --accent-a-bg: #cffafe;
-  --accent-a-text: #164e63;
-  --accent-a-border: #06b6d4;
-  --accent-b: #f43f5e;
-  --accent-b-bg: #ffe4e6;
-  --accent-b-text: #881337;
-  --accent-b-border: #fda4af;
-  --accent-violet: #7c3aed;
-  --accent-violet-bg: #ede9fe;
-  --accent-violet-text: #4c1d95;
-  --accent-violet-border: #c4b5fd;
+  --text: #881337;
+  --text-secondary: #9f1239;
+  --text-muted: #be123c;
+  --text-dim: #e11d48;
+  --accent-a: #059669;
+  --accent-b: #e11d48;
   --scrollbar-track: #ffe4e6;
-  --scrollbar-thumb: #fda4af;
-  --scrollbar-thumb-hover: #fb7185;
-  --gradient-from: #0891b2;
-  --gradient-to: #f43f5e;
+  --scrollbar-thumb: #fecdd3;
+  --scrollbar-thumb-hover: #fda4af;
 }
+[data-theme="sakura"] body { background-color: #fef2f2; color: #881337; }
+[data-theme="sakura"] .bg-slate-900 { background-color: #fff1f2 !important; }
+[data-theme="sakura"] .bg-slate-800 { background-color: #ffe4e6 !important; }
+[data-theme="sakura"] .bg-slate-700 { background-color: #fecdd3 !important; }
+[data-theme="sakura"] [class*="bg-slate-800/"] { background-color: #ffe4e6 !important; }
+[data-theme="sakura"] .border-slate-700 { border-color: #fda4af !important; }
+[data-theme="sakura"] .border-slate-600 { border-color: #fb7185 !important; }
+[data-theme="sakura"] .border-slate-800 { border-color: #ffe4e6 !important; }
+[data-theme="sakura"] .text-slate-100 { color: #881337 !important; }
+[data-theme="sakura"] .text-slate-200 { color: #881337 !important; }
+[data-theme="sakura"] .text-slate-300 { color: #9f1239 !important; }
+[data-theme="sakura"] .text-slate-400 { color: #be123c !important; }
+[data-theme="sakura"] .text-slate-500 { color: #e11d48 !important; }
+[data-theme="sakura"] .text-slate-600 { color: #f43f5e !important; }
+[data-theme="sakura"] .hover\:bg-slate-600:hover { background-color: #fecdd3 !important; }
+[data-theme="sakura"] .hover\:border-slate-500:hover { border-color: #fb7185 !important; }
 
+/* ===== 森林主题 ===== */
 [data-theme="forest"] {
   --bg: #022c22;
   --bg-card: #064e3b;
@@ -93,34 +67,37 @@
   --border: #047857;
   --border-light: #065f46;
   --text: #d1fae5;
-  --text-secondary: #6ee7b7;
-  --text-muted: #34d399;
-  --text-dim: #059669;
-  --accent-a: #fbbf24;
-  --accent-a-bg: #78350f;
-  --accent-a-text: #fef3c7;
-  --accent-a-border: #b45309;
-  --accent-b: #f59e0b;
-  --accent-b-bg: #92400e;
-  --accent-b-text: #fef3c7;
-  --accent-b-border: #b45309;
-  --accent-violet: #a78bfa;
-  --accent-violet-bg: #4c1d95;
-  --accent-violet-text: #ede9fe;
-  --accent-violet-border: #7c3aed;
-  --scrollbar-track: #064e3b;
+  --text-secondary: #a7f3d0;
+  --text-muted: #6ee7b7;
+  --text-dim: #34d399;
+  --accent-a: #34d399;
+  --accent-b: #f87171;
+  --scrollbar-track: #065f46;
   --scrollbar-thumb: #047857;
   --scrollbar-thumb-hover: #059669;
-  --gradient-from: #fbbf24;
-  --gradient-to: #f59e0b;
 }
+[data-theme="forest"] body { background-color: #022c22; color: #d1fae5; }
+[data-theme="forest"] .bg-slate-900 { background-color: #064e3b !important; }
+[data-theme="forest"] .bg-slate-800 { background-color: #065f46 !important; }
+[data-theme="forest"] .bg-slate-700 { background-color: #047857 !important; }
+[data-theme="forest"] [class*="bg-slate-800/"] { background-color: #065f46 !important; }
+[data-theme="forest"] .border-slate-700 { border-color: #059669 !important; }
+[data-theme="forest"] .border-slate-600 { border-color: #10b981 !important; }
+[data-theme="forest"] .border-slate-800 { border-color: #065f46 !important; }
+[data-theme="forest"] .text-slate-100 { color: #d1fae5 !important; }
+[data-theme="forest"] .text-slate-200 { color: #d1fae5 !important; }
+[data-theme="forest"] .text-slate-300 { color: #a7f3d0 !important; }
+[data-theme="forest"] .text-slate-400 { color: #6ee7b7 !important; }
+[data-theme="forest"] .text-slate-500 { color: #34d399 !important; }
+[data-theme="forest"] .text-slate-600 { color: #10b981 !important; }
+[data-theme="forest"] .hover\:bg-slate-600:hover { background-color: #047857 !important; }
+[data-theme="forest"] .hover\:border-slate-500:hover { border-color: #10b981 !important; }
 
 /* ===== 全局基础样式 ===== */
 body {
   font-family: "Cormorant Garamond", "Noto Serif SC", serif;
   background-color: var(--bg);
   color: var(--text);
-  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ===== 自定义滚动条 ===== */
@@ -147,63 +124,6 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ===== 自定义按钮 ===== */
-.btn-emerald {
-  background-color: var(--accent-a-bg);
-  color: var(--accent-a-text);
-  border: 1px solid var(--accent-a-border);
-  transition: all 0.15s;
-}
-.btn-emerald:hover {
-  background-color: var(--accent-a-border);
-  border-color: var(--accent-a);
-}
-.btn-emerald:active {
-  filter: brightness(0.85);
-}
-
-.btn-rose {
-  background-color: var(--accent-b-bg);
-  color: var(--accent-b-text);
-  border: 1px solid var(--accent-b-border);
-  transition: all 0.15s;
-}
-.btn-rose:hover {
-  background-color: var(--accent-b-border);
-  border-color: var(--accent-b);
-}
-.btn-rose:active {
-  filter: brightness(0.85);
-}
-
-.btn-violet {
-  background-color: var(--accent-violet-bg);
-  color: var(--accent-violet-text);
-  border: 1px solid var(--accent-violet-border);
-  transition: all 0.15s;
-}
-.btn-violet:hover {
-  background-color: var(--accent-violet-border);
-  border-color: var(--accent-violet);
-}
-.btn-violet:active {
-  filter: brightness(0.85);
-}
-
-/* ===== 导航高亮 ===== */
-.nav-link {
-  color: var(--text-muted);
-}
-.nav-link:hover {
-  color: var(--text-secondary);
-}
-.nav-link.active {
-  color: var(--text);
-}
-.nav-link.active span {
-  font-weight: 600;
-}
-
 /* ===== 决策结果弹跳动画 ===== */
 .result-bounce {
   animation: bounceIn 0.35s ease-out;
@@ -212,28 +132,4 @@ body {
   0% { opacity: 0; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.04); }
   100% { transform: scale(1); }
-}
-
-/* ===== 储蓄罐摇晃动画 ===== */
-.jar-shake {
-  animation: jarShake 0.5s ease-in-out;
-}
-@keyframes jarShake {
-  0%, 100% { transform: translateX(0); }
-  10% { transform: translateX(-6px) rotate(-2deg); }
-  20% { transform: translateX(6px) rotate(2deg); }
-  30% { transform: translateX(-5px) rotate(-1.5deg); }
-  40% { transform: translateX(5px) rotate(1.5deg); }
-  50% { transform: translateX(-3px) rotate(-1deg); }
-  60% { transform: translateX(3px) rotate(1deg); }
-  70% { transform: translateX(-1px); }
-  80% { transform: translateX(1px); }
-  90% { transform: scale(1.03); }
-}
-
-/* ===== 旅行地图时间线高亮 ===== */
-.travel-highlight {
-  background-color: var(--accent-a-bg) !important;
-  border-color: var(--accent-a-border) !important;
-  transition: background-color 0.3s, border-color 0.3s;
 }

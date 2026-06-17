@@ -130,26 +130,17 @@ const DEFAULT_RESTAURANTS = {
   "日韩风味": [
     "雪下觅炙", "Terrace in Seaside", "牛角日本烧肉", "852",
     "元气寿司", "寿司郎", "吉野家",
-    "一兰拉面（棉登径）", "大喜屋放题", "一风堂", "新麻蒲",
-    "Goobne Chicken", "Outdark", "韩珍", "鮨文", "焱丸水产",
+    "一兰拉面（棉登径）"
+    
   ],
   "东南亚风味": [
     "芽庄越南料理", "泰斗 Thai Master",
-    "好时沙嗲（好时中心）", "Mint & Basil", "Greyhound Cafe",
-    "锦丽越南河粉", "Nara Thai", "文华鸡饭", "Chatuchak",
-    "马来亚餐厅", "泰简单",
   ],
   "西餐异国": [
-    "Pici",
-    "Ruby Tuesday", "Pizza Express", "The Cheesecake Factory（海港城）",
-    "Dan Ryan's", "La Vache!", "Habitu", "BLT Steak",
-    "Amaroni's", "Oyster & Wine Bar（喜来登）",
+    "Pici","Pizza Express","Pizza Hut",
   ],
   "轻食其他": [
-    "CitySuper",
-    "Lady M", "当文历饼店", "Elephant Grounds", "N1 Coffee & Co",
-    "The Lounge（半岛酒店）", "一幻拉面", "Harlan's（The ONE）",
-    "Habitat", "Delicieux", "Al Molo",
+    "CitySuper", "Lady M", "吃茶三千", "星巴克 Reserve", "Pacific Coffee", "Coffee Master",
   ],
 };
 

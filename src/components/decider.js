@@ -40,16 +40,16 @@ var themeInactiveClass = "text-slate-500 hover:text-slate-300";
 /** 各主题下餐厅/菜式的配色方案 */
 var themeColorSchemes = {
   night: {
-    rest: { bg: "bg-indigo-600", hover: "hover:bg-indigo-500", name: "indigo", hex: "600" },
-    food: { bg: "bg-rose-600", hover: "hover:bg-rose-500", name: "rose", hex: "600" },
+    rest: { bg: "bg-indigo-600", hover: "hover:bg-indigo-500", name: "indigo", hex: "600", text: "text-indigo-400", hoverText: "hover:text-indigo-400", border: "border-indigo-600", focusBorder: "focus:border-indigo-600" },
+    food: { bg: "bg-rose-600", hover: "hover:bg-rose-500", name: "rose", hex: "600", text: "text-rose-400", hoverText: "hover:text-rose-400", border: "border-rose-600", focusBorder: "focus:border-rose-600" },
   },
   sakura: {
-    rest: { bg: "bg-rose-500", hover: "hover:bg-rose-400", name: "rose", hex: "500" },
-    food: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600" },
+    rest: { bg: "bg-rose-500", hover: "hover:bg-rose-400", name: "rose", hex: "500", text: "text-rose-400", hoverText: "hover:text-rose-400", border: "border-rose-500", focusBorder: "focus:border-rose-500" },
+    food: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600", text: "text-emerald-400", hoverText: "hover:text-emerald-400", border: "border-emerald-600", focusBorder: "focus:border-emerald-600" },
   },
   forest: {
-    rest: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600" },
-    food: { bg: "bg-amber-600", hover: "hover:bg-amber-500", name: "amber", hex: "600" },
+    rest: { bg: "bg-emerald-600", hover: "hover:bg-emerald-500", name: "emerald", hex: "600", text: "text-emerald-400", hoverText: "hover:text-emerald-400", border: "border-emerald-600", focusBorder: "focus:border-emerald-600" },
+    food: { bg: "bg-amber-600", hover: "hover:bg-amber-500", name: "amber", hex: "600", text: "text-amber-400", hoverText: "hover:text-amber-400", border: "border-amber-600", focusBorder: "focus:border-amber-600" },
   },
 };
 
@@ -180,7 +180,7 @@ var categoryBlockHtml = function (catName, items, blockMode) {
       '<span class="text-xs text-slate-600 w-5 text-right flex-shrink-0">' + (i + 1) + "</span>" +
       '<span class="flex-1 text-sm text-slate-300 truncate">' + escHtml(items[i]) + "</span>" +
       '<span class="decider-item-actions flex gap-1">' +
-      '<button class="decider-edit-item text-slate-500 hover:text-emerald-400 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" data-cat="' + catName + '" data-idx="' + i + '">&#9998;</button>' +
+      '<button class="decider-edit-item text-slate-500 ' + getAccent().hoverText + ' text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" data-cat="' + catName + '" data-idx="' + i + '">&#9998;</button>' +
       '<button class="decider-del-item text-slate-500 hover:text-rose-400 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" data-cat="' + catName + '" data-idx="' + i + '">&#10005;</button>' +
       "</span>" +
       "</div>"
@@ -201,7 +201,7 @@ var categoryBlockHtml = function (catName, items, blockMode) {
     // 添加输入行
     '<div class="border-t border-slate-800 p-3">',
     '<div class="flex gap-2">',
-    '<input type="text" class="decider-add-input flex-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-rose-500 placeholder-slate-600" placeholder="添加' + catName + itemLabel + '..." data-cat="' + catName + '" />',
+    '<input type="text" class="decider-add-input flex-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 outline-none ' + getAccent().focusBorder + ' placeholder-slate-600" placeholder="添加' + catName + itemLabel + '..." data-cat="' + catName + '" />',
     '<button class="decider-btn-add-cat rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-600 active:scale-95 transition-all whitespace-nowrap" data-cat="' + catName + '">+ 添加</button>',
     "</div>",
     "</div>",
@@ -235,7 +235,7 @@ var editPanelHtml = function (panelMode) {
     '<div class="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">',
     '<div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">',
     '<span class="text-sm text-slate-400">' + panelIcon + " " + panelLabel + ' · ' + totalCount + " 项</span>",
-    '<button id="' + toggleId + '" class="text-xs text-slate-500 hover:text-emerald-400 transition-colors">' + (expanded ? "收起 ▴" : "查看全部 ▾") + "</button>",
+    '<button id="' + toggleId + '" class="text-xs text-slate-500 ' + getAccent().hoverText + ' transition-colors">' + (expanded ? "收起 ▴" : "查看全部 ▾") + "</button>",
     "</div>",
     '<div id="' + listId + '" class="max-h-[60vh] overflow-y-auto' + (expanded ? "" : " hidden") + '">',
     blocks.join(""),
@@ -365,7 +365,7 @@ var doRoll = function (exclude) {
   var main = document.getElementById("decider-result-text");
   if (main) {
     var icon = isRest ? "📍" : "🍽️";
-    var color = isRest ? "text-emerald-400" : "text-rose-400";
+    var color = getAccent().text;
     main.innerHTML = icon + ' <span class="' + color + ' font-bold">' + escHtml(picked) + "</span>";
   }
 
@@ -403,10 +403,10 @@ var handleCopy = function () {
       if (btn) {
         var orig = btn.innerHTML;
         btn.innerHTML = "✅ 已复制";
-        btn.classList.add("text-emerald-400");
+        btn.classList.add(getAccent().text);
         setTimeout(function () {
           btn.innerHTML = orig;
-          btn.classList.remove("text-emerald-400");
+          btn.classList.remove(getAccent().text);
         }, 1500);
       }
     });
@@ -540,9 +540,10 @@ var setupDelegation = function () {
       var textSpan = row.querySelector("span.flex-1");
       if (!textSpan) return;
 
+      var accent = getAccent();
       var currentVal = textSpan.textContent;
       textSpan.innerHTML =
-        '<input type="text" class="decider-inline-edit w-full rounded border border-rose-600 bg-slate-800 px-2 py-1 text-sm text-slate-100 outline-none" value="' +
+        '<input type="text" class="decider-inline-edit w-full rounded border ' + accent.border + ' bg-slate-800 px-2 py-1 text-sm text-slate-100 outline-none" value="' +
         escHtml(currentVal) +
         '" />';
       var editInput = textSpan.querySelector("input");
@@ -556,7 +557,7 @@ var setupDelegation = function () {
       var actionDiv = row.querySelector(".decider-item-actions");
       if (actionDiv) {
         actionDiv.innerHTML =
-          '<button class="decider-confirm-edit text-emerald-400 hover:text-emerald-300 text-xs px-1" data-cat="' + cat + '" data-idx="' + idx + '">&#10003;</button>' +
+          '<button class="decider-confirm-edit ' + accent.text + ' text-xs px-1" data-cat="' + cat + '" data-idx="' + idx + '">&#10003;</button>' +
           '<button class="decider-cancel-edit text-slate-400 hover:text-slate-300 text-xs px-1">&#10005;</button>';
       }
       return;
@@ -629,6 +630,15 @@ var bindEvents = function () {
       }
     });
   }
+
+  // 空格键快速抽取
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== " " && e.code !== "Space") return;
+    var tag = document.activeElement ? document.activeElement.tagName : "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    e.preventDefault();
+    doRoll();
+  });
 };
 
 // ====================== 渲染入口 ======================

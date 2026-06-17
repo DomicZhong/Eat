@@ -127,20 +127,20 @@ const DEFAULT_RESTAURANTS = {
     "澳洲牛奶公司", "兰芳园（重庆大厦）", "翠华餐厅（加拿芬道）",
     "华嫂冰室（尖沙咀）", "麦奀云吞面世家", "银龙茶餐厅", "点点心",
     "一乐烧鹅", "金华冰厅", "胜香园", "新香园", "新兴食家",
-    "澳洲茶餐厅", "红茶冰室",
+    "澳洲茶餐厅", "红茶冰室","敏华冰厅", "金满庭", "大家乐"
   ],
   "日韩风味": [
     "一兰拉面（棉登径）", "牛角日本烧肉", "大喜屋放题", "一风堂",
     "新麻蒲", "名家韩国料理", "和民", "鮨文", "焱丸水产",
-    "Goobne Chicken", "Outdark", "韩珍",
+    "Goobne Chicken", "Outdark", "韩珍", "852"
   ],
   "东南亚风味": [
     "好时沙嗲（好时中心）", "芽庄越南料理", "Mint & Basil",
     "Greyhound Cafe", "锦丽越南河粉", "泰简单", "Nara Thai",
-    "马来亚餐厅", "文华鸡饭", "Chatuchak",
+    "马来亚餐厅", "文华鸡饭", "Chatuchak", "泰厨Thai Master"
   ],
   "西餐异国": [
-    "Outback Steakhouse（尖沙咀）", "Ruby Tuesday", "Pizza Express",
+    "Ruby Tuesday", "Pizza Express",
     "The Cheesecake Factory（海港城）", "Wooloomooloo", "Dan Ryan's",
     "Amaroni's", "Habitu", "BLT Steak", "La Vache!",
     "Oyster & Wine Bar（喜来登）",

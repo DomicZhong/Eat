@@ -1,8 +1,8 @@
 {
   "name": "chi-shen-me",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "吃什么 — 按菜系分类的美食随机决策器",
+  "description": "吃什么 — 餐厅/菜式双模式随机决策器，支持三主题切换+6分类+7天防重复",
   "type": "module",
   "scripts": {
     "dev": "vite",

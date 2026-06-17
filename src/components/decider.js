@@ -116,6 +116,99 @@ var updateAccentElements = function () {
 };
 
 /**
+ * 导出数据（收集所有 localStorage ustime_ 前缀数据）
+ */
+var handleExport = function () {
+  var data = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.indexOf("ustime_") === 0) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); } catch (_e) { data[key] = localStorage.getItem(key); }
+    }
+  }
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "eat-data-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * 导入数据：合并（不覆盖已有项，去重）
+ */
+var handleImport = function (file) {
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      var mergedCount = 0;
+      var keys = Object.keys(imported);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.indexOf("ustime_") !== 0) continue;
+        try {
+          var incoming = typeof imported[k] === "string" ? JSON.parse(imported[k]) : imported[k];
+          var existingRaw = localStorage.getItem(k);
+          var existing = existingRaw ? JSON.parse(existingRaw) : null;
+
+          if (k.indexOf("ustime_decision_history") === 0) {
+            // 历史记录：直接合并数组
+            if (Array.isArray(incoming)) {
+              var history = Array.isArray(existing) ? existing : [];
+              for (var h = 0; h < incoming.length; h++) {
+                history.push(incoming[h]);
+              }
+              localStorage.setItem(k, JSON.stringify(history));
+              mergedCount += incoming.length;
+            }
+          } else if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+            // 分类数据 (foods/restaurants): 合并各分类，去重
+            var cats = Object.keys(incoming);
+            for (var c = 0; c < cats.length; c++) {
+              var cat = cats[c];
+              if (!Array.isArray(incoming[cat])) continue;
+              if (!existing[cat]) existing[cat] = [];
+              for (var j = 0; j < incoming[cat].length; j++) {
+                if (existing[cat].indexOf(incoming[cat][j]) === -1) {
+                  existing[cat].push(incoming[cat][j]);
+                  mergedCount++;
+                }
+              }
+            }
+            localStorage.setItem(k, JSON.stringify(existing));
+          } else {
+            // 简单值直接设置
+            localStorage.setItem(k, typeof imported[k] === "string" ? imported[k] : JSON.stringify(incoming));
+            mergedCount++;
+          }
+        } catch (_err) { /* 跳过损坏的键 */ }
+      }
+      showImportMsg("✅ 已合并 " + mergedCount + " 条数据，刷新中...");
+      setTimeout(function () { refresh(); }, 600);
+    } catch (_err) {
+      showImportMsg("❌ 文件格式错误");
+    }
+  };
+  reader.readAsText(file);
+};
+
+/**
+ * 显示导入结果提示
+ */
+var showImportMsg = function (msg) {
+  var el = document.getElementById("decider-import-msg");
+  if (el) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    setTimeout(function () { el.classList.add("hidden"); }, 3000);
+  }
+};
+
+/**
  * 转义 HTML
  */
 var escHtml = function (str) {
@@ -303,6 +396,19 @@ var html = function () {
     // 编辑面板
     editPanelHtml(mode),
 
+    // 数据导入导出
+    '<div class="mt-6 pt-4 border-t border-slate-700">',
+    '<div class="flex items-center justify-between">',
+    '<span class="text-xs text-slate-500">📤 数据同步 · 收集同事喜好</span>',
+    '<div class="flex gap-2">',
+    '<button id="decider-btn-export" class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">📥 导出</button>',
+    '<button id="decider-btn-import" class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-slate-100 active:scale-95 transition-all">📤 导入</button>',
+    "</div>",
+    "</div>",
+    '<input type="file" id="decider-import-file" accept=".json" class="hidden" />',
+    '<p id="decider-import-msg" class="mt-2 text-xs text-slate-500 hidden"></p>',
+    "</div>",
+
     "</div>",
   ].join("");
 };
@@ -393,6 +499,99 @@ var doRoll = function (exclude) {
 };
 
 /**
+ * 导出数据（收集所有 localStorage ustime_ 前缀数据）
+ */
+var handleExport = function () {
+  var data = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.indexOf("ustime_") === 0) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); } catch (_e) { data[key] = localStorage.getItem(key); }
+    }
+  }
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "eat-data-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * 导入数据：合并（不覆盖已有项，去重）
+ */
+var handleImport = function (file) {
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      var mergedCount = 0;
+      var keys = Object.keys(imported);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.indexOf("ustime_") !== 0) continue;
+        try {
+          var incoming = typeof imported[k] === "string" ? JSON.parse(imported[k]) : imported[k];
+          var existingRaw = localStorage.getItem(k);
+          var existing = existingRaw ? JSON.parse(existingRaw) : null;
+
+          if (k.indexOf("ustime_decision_history") === 0) {
+            // 历史记录：直接合并数组
+            if (Array.isArray(incoming)) {
+              var history = Array.isArray(existing) ? existing : [];
+              for (var h = 0; h < incoming.length; h++) {
+                history.push(incoming[h]);
+              }
+              localStorage.setItem(k, JSON.stringify(history));
+              mergedCount += incoming.length;
+            }
+          } else if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+            // 分类数据 (foods/restaurants): 合并各分类，去重
+            var cats = Object.keys(incoming);
+            for (var c = 0; c < cats.length; c++) {
+              var cat = cats[c];
+              if (!Array.isArray(incoming[cat])) continue;
+              if (!existing[cat]) existing[cat] = [];
+              for (var j = 0; j < incoming[cat].length; j++) {
+                if (existing[cat].indexOf(incoming[cat][j]) === -1) {
+                  existing[cat].push(incoming[cat][j]);
+                  mergedCount++;
+                }
+              }
+            }
+            localStorage.setItem(k, JSON.stringify(existing));
+          } else {
+            // 简单值直接设置
+            localStorage.setItem(k, typeof imported[k] === "string" ? imported[k] : JSON.stringify(incoming));
+            mergedCount++;
+          }
+        } catch (_err) { /* 跳过损坏的键 */ }
+      }
+      showImportMsg("✅ 已合并 " + mergedCount + " 条数据，刷新中...");
+      setTimeout(function () { refresh(); }, 600);
+    } catch (_err) {
+      showImportMsg("❌ 文件格式错误");
+    }
+  };
+  reader.readAsText(file);
+};
+
+/**
+ * 显示导入结果提示
+ */
+var showImportMsg = function (msg) {
+  var el = document.getElementById("decider-import-msg");
+  if (el) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    setTimeout(function () { el.classList.add("hidden"); }, 3000);
+  }
+};
+
+/**
  * 复制结果
  */
 var handleCopy = function () {
@@ -419,6 +618,192 @@ var handleCopy = function () {
       sel.removeAllRanges();
       sel.addRange(range);
     }
+  }
+};
+
+/**
+ * 导出数据（收集所有 localStorage ustime_ 前缀数据）
+ */
+var handleExport = function () {
+  var data = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.indexOf("ustime_") === 0) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); } catch (_e) { data[key] = localStorage.getItem(key); }
+    }
+  }
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "eat-data-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * 导入数据：合并（不覆盖已有项，去重）
+ */
+var handleImport = function (file) {
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      var mergedCount = 0;
+      var keys = Object.keys(imported);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.indexOf("ustime_") !== 0) continue;
+        try {
+          var incoming = typeof imported[k] === "string" ? JSON.parse(imported[k]) : imported[k];
+          var existingRaw = localStorage.getItem(k);
+          var existing = existingRaw ? JSON.parse(existingRaw) : null;
+
+          if (k.indexOf("ustime_decision_history") === 0) {
+            // 历史记录：直接合并数组
+            if (Array.isArray(incoming)) {
+              var history = Array.isArray(existing) ? existing : [];
+              for (var h = 0; h < incoming.length; h++) {
+                history.push(incoming[h]);
+              }
+              localStorage.setItem(k, JSON.stringify(history));
+              mergedCount += incoming.length;
+            }
+          } else if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+            // 分类数据 (foods/restaurants): 合并各分类，去重
+            var cats = Object.keys(incoming);
+            for (var c = 0; c < cats.length; c++) {
+              var cat = cats[c];
+              if (!Array.isArray(incoming[cat])) continue;
+              if (!existing[cat]) existing[cat] = [];
+              for (var j = 0; j < incoming[cat].length; j++) {
+                if (existing[cat].indexOf(incoming[cat][j]) === -1) {
+                  existing[cat].push(incoming[cat][j]);
+                  mergedCount++;
+                }
+              }
+            }
+            localStorage.setItem(k, JSON.stringify(existing));
+          } else {
+            // 简单值直接设置
+            localStorage.setItem(k, typeof imported[k] === "string" ? imported[k] : JSON.stringify(incoming));
+            mergedCount++;
+          }
+        } catch (_err) { /* 跳过损坏的键 */ }
+      }
+      showImportMsg("✅ 已合并 " + mergedCount + " 条数据，刷新中...");
+      setTimeout(function () { refresh(); }, 600);
+    } catch (_err) {
+      showImportMsg("❌ 文件格式错误");
+    }
+  };
+  reader.readAsText(file);
+};
+
+/**
+ * 显示导入结果提示
+ */
+var showImportMsg = function (msg) {
+  var el = document.getElementById("decider-import-msg");
+  if (el) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    setTimeout(function () { el.classList.add("hidden"); }, 3000);
+  }
+};
+
+/**
+ * 导出数据（收集所有 localStorage ustime_ 前缀数据）
+ */
+var handleExport = function () {
+  var data = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.indexOf("ustime_") === 0) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); } catch (_e) { data[key] = localStorage.getItem(key); }
+    }
+  }
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "eat-data-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * 导入数据：合并（不覆盖已有项，去重）
+ */
+var handleImport = function (file) {
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      var mergedCount = 0;
+      var keys = Object.keys(imported);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k.indexOf("ustime_") !== 0) continue;
+        try {
+          var incoming = typeof imported[k] === "string" ? JSON.parse(imported[k]) : imported[k];
+          var existingRaw = localStorage.getItem(k);
+          var existing = existingRaw ? JSON.parse(existingRaw) : null;
+
+          if (k.indexOf("ustime_decision_history") === 0) {
+            // 历史记录：直接合并数组
+            if (Array.isArray(incoming)) {
+              var history = Array.isArray(existing) ? existing : [];
+              for (var h = 0; h < incoming.length; h++) {
+                history.push(incoming[h]);
+              }
+              localStorage.setItem(k, JSON.stringify(history));
+              mergedCount += incoming.length;
+            }
+          } else if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+            // 分类数据 (foods/restaurants): 合并各分类，去重
+            var cats = Object.keys(incoming);
+            for (var c = 0; c < cats.length; c++) {
+              var cat = cats[c];
+              if (!Array.isArray(incoming[cat])) continue;
+              if (!existing[cat]) existing[cat] = [];
+              for (var j = 0; j < incoming[cat].length; j++) {
+                if (existing[cat].indexOf(incoming[cat][j]) === -1) {
+                  existing[cat].push(incoming[cat][j]);
+                  mergedCount++;
+                }
+              }
+            }
+            localStorage.setItem(k, JSON.stringify(existing));
+          } else {
+            // 简单值直接设置
+            localStorage.setItem(k, typeof imported[k] === "string" ? imported[k] : JSON.stringify(incoming));
+            mergedCount++;
+          }
+        } catch (_err) { /* 跳过损坏的键 */ }
+      }
+      showImportMsg("✅ 已合并 " + mergedCount + " 条数据，刷新中...");
+      setTimeout(function () { refresh(); }, 600);
+    } catch (_err) {
+      showImportMsg("❌ 文件格式错误");
+    }
+  };
+  reader.readAsText(file);
+};
+
+/**
+ * 显示导入结果提示
+ */
+var showImportMsg = function (msg) {
+  var el = document.getElementById("decider-import-msg");
+  if (el) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    setTimeout(function () { el.classList.add("hidden"); }, 3000);
   }
 };
 
@@ -639,6 +1024,23 @@ var bindEvents = function () {
     e.preventDefault();
     doRoll();
   });
+
+  // 导出按钮
+  var btnExport = document.getElementById("decider-btn-export");
+  if (btnExport) btnExport.addEventListener("click", handleExport);
+
+  // 导入按钮 → 触发隐藏的 file input
+  var btnImport = document.getElementById("decider-btn-import");
+  var fileInput = document.getElementById("decider-import-file");
+  if (btnImport && fileInput) {
+    btnImport.addEventListener("click", function () { fileInput.click(); });
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files.length > 0) {
+        handleImport(fileInput.files[0]);
+        fileInput.value = "";
+      }
+    });
+  }
 };
 
 // ====================== 渲染入口 ======================

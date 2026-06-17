@@ -119,36 +119,37 @@ const RESTAURANTS_KEY = "restaurants";
 /** 默认餐厅数据（尖沙咀及周边） */
 const DEFAULT_RESTAURANTS = {
   "中式经典": [
-    "利苑酒家（iSQUARE）", "东海荟（海港城）", "翠园（星光行）", "唐宫小聚",
-    "八月花（海港城）", "凤城酒家", "翡翠拉面小笼包", "上海姥姥",
-    "莆田（海港城）", "稻成", "王家沙", "乐天皇朝", "誉宴",
+    "北京水饺店", "云南铜锅米线", "唐宫小聚", "翡翠拉面小笼包", "上海姥姥",
+    "麻辣鱼馆", "权发小厨", "台北栈", "千两",
   ],
   "港式美食": [
-    "澳洲牛奶公司", "兰芳园（重庆大厦）", "翠华餐厅（加拿芬道）",
-    "华嫂冰室（尖沙咀）", "麦奀云吞面世家", "银龙茶餐厅", "点点心",
-    "一乐烧鹅", "金华冰厅", "胜香园", "新香园", "新兴食家",
-    "澳洲茶餐厅", "红茶冰室","敏华冰厅", "金满庭", "大家乐"
+    "八月茶室", "澳门茶餐厅", "红茶冰室", "敏华冰厅",
+    "澳洲牛奶公司", "兰芳园（重庆大厦）", "华嫂冰室（尖沙咀）","棋哥烧鹅",
+    "翠华餐厅（加拿芬道）"
   ],
   "日韩风味": [
-    "一兰拉面（棉登径）", "牛角日本烧肉", "大喜屋放题", "一风堂",
-    "新麻蒲", "名家韩国料理", "和民", "鮨文", "焱丸水产",
-    "Goobne Chicken", "Outdark", "韩珍", "852"
+    "雪下觅炙", "Terrace in Seaside", "牛角日本烧肉", "852",
+    "元气寿司", "寿司郎", "吉野家",
+    "一兰拉面（棉登径）", "大喜屋放题", "一风堂", "新麻蒲",
+    "Goobne Chicken", "Outdark", "韩珍", "鮨文", "焱丸水产",
   ],
   "东南亚风味": [
-    "好时沙嗲（好时中心）", "芽庄越南料理", "Mint & Basil",
-    "Greyhound Cafe", "锦丽越南河粉", "泰简单", "Nara Thai",
-    "马来亚餐厅", "文华鸡饭", "Chatuchak", "泰厨Thai Master"
+    "芽庄越南料理", "泰斗 Thai Master",
+    "好时沙嗲（好时中心）", "Mint & Basil", "Greyhound Cafe",
+    "锦丽越南河粉", "Nara Thai", "文华鸡饭", "Chatuchak",
+    "马来亚餐厅", "泰简单",
   ],
   "西餐异国": [
-    "Ruby Tuesday", "Pizza Express",
-    "The Cheesecake Factory（海港城）", "Wooloomooloo", "Dan Ryan's",
-    "Amaroni's", "Habitu", "BLT Steak", "La Vache!",
-    "Oyster & Wine Bar（喜来登）",
+    "Pici",
+    "Ruby Tuesday", "Pizza Express", "The Cheesecake Factory（海港城）",
+    "Dan Ryan's", "La Vache!", "Habitu", "BLT Steak",
+    "Amaroni's", "Oyster & Wine Bar（喜来登）",
   ],
   "轻食其他": [
-    "The Lounge（半岛酒店）", "Lady M", "当文历饼店", "Habitat",
-    "牛极石板烧", "一幻拉面", "Harlan's（The ONE）", "Delicieux",
-    "Elephant Grounds", "N1 Coffee & Co", "Al Molo",
+    "CitySuper",
+    "Lady M", "当文历饼店", "Elephant Grounds", "N1 Coffee & Co",
+    "The Lounge（半岛酒店）", "一幻拉面", "Harlan's（The ONE）",
+    "Habitat", "Delicieux", "Al Molo",
   ],
 };
 

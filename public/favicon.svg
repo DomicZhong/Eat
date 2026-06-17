@@ -1,7 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="30" fill="#f43f5e"/>
-  <circle cx="32" cy="22" r="6" fill="#f1f5f9"/>
-  <ellipse cx="32" cy="48" rx="14" ry="6" fill="#f1f5f9"/>
-  <rect x="14" y="18" width="8" height="3" rx="1.5" fill="#f43f5e" transform="rotate(-30 18 19)"/>
-  <rect x="42" y="18" width="8" height="3" rx="1.5" fill="#f43f5e" transform="rotate(30 46 19)"/>
+  <!-- 碗身 -->
+  <path d="M10 28 C10 20, 54 20, 54 28 L50 56 C50 60, 14 60, 14 56 Z" fill="#f87171"/>
+  <!-- 碗暗面 -->
+  <path d="M32 28 L32 56 C32 60, 14 60, 14 56 L10 28 C10 20, 32 20, 32 20 Z" fill="#ef4444" opacity="0.5"/>
+  <!-- 碗口内沿 -->
+  <ellipse cx="32" cy="28" rx="22" ry="6" fill="#fbbf24"/>
+  <!-- 米饭 -->
+  <ellipse cx="32" cy="27" rx="19" ry="5" fill="#fef3c7"/>
+  <ellipse cx="32" cy="26" rx="17" ry="4" fill="#fff"/>
+  <!-- 蒸气流 左 -->
+  <path d="M22 16 C20 10, 16 8, 20 2" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <!-- 蒸气流 中 -->
+  <path d="M32 14 C32 8, 28 6, 32 0" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+  <!-- 蒸气流 右 -->
+  <path d="M42 16 C44 10, 48 8, 44 2" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
 </svg>

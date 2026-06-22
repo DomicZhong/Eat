@@ -135,19 +135,18 @@ const DEFAULT_RESTAURANTS = {
     "雪下觅炙", "Terrace in Seaside", "牛角日本烧肉", "852",
     "元气寿司", "寿司郎", "吉野家","温野菜",
     "一兰拉面（棉登径）"
-    
   ],
   "东南亚风味": [
-    "芽庄越南料理", "泰斗 Thai Master", "泰厨"
+    "芽庄越南料理", "泰斗 Thai Master", "泰厨", "Lady Nara", "金不换"
   ],
   "西餐异国": [
-    "Pici","Pizza Express","Pizza Hut",
+    "Pici","Pizza Express","Pizza Hut","Pizza Maru"
   ],
   "咖啡/茶饮": [
-    "吃茶三千", "星巴克", "Pacific Coffee", "Coffee Master",
+    "吃茶三千", "星巴克", "Pacific Coffee", "Coffee Master", "NOC Coffee","Milksha 迷客夏 (加拿芬道)","HEYTEA 喜茶 (K11 Art Mall)"
   ],
   "轻食/其他":  [
-    "CitySuper", "Lady M"
+    "CitySuper", "Lady M", "HashTag - B", "Bakehouse"
   ],
 };
 

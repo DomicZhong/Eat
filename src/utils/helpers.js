@@ -11,7 +11,8 @@ export const CATEGORIES = {
   "日韩风味": { emoji: "🍣", color: "orange" },
   "东南亚风味": { emoji: "🍲", color: "emerald" },
   "西餐异国": { emoji: "🍝", color: "indigo" },
-  "咖啡/茶饮/其他": { emoji: "☕", color: "sky" },
+  "咖啡/茶饮": { emoji: "☕", color: "sky" },
+  "轻食/其他": { emoji: "🥗", color: "teal" },
 };
 
 /** 默认美食数据 */
@@ -49,10 +50,13 @@ const DEFAULT_FOODS = {
     "葡国菜", "西班牙海鲜饭", "地中海沙拉", "生蚝海鲜盘",
     "德国猪手", "瑞士芝士火锅",
   ],
-  "咖啡/茶饮/其他": [
+  "咖啡/茶饮": [
+    "咖啡简餐", "手冲咖啡", "精品茶饮", "奶茶果茶", "冰滴咖啡",
+  ],
+  "轻食/其他": [
     "轻食沙拉", "海鲜大餐", "自助餐", "素食料理", "brunch",
     "下午茶甜品", "夜市小吃", "自己在家做饭", "粥粉面饭",
-    "火锅放题", "素食自助餐", "私房菜", "大排档", "咖啡简餐",
+    "火锅放题", "素食自助餐", "私房菜", "大排档",
   ],
 };
 
@@ -139,8 +143,11 @@ const DEFAULT_RESTAURANTS = {
   "西餐异国": [
     "Pici","Pizza Express","Pizza Hut",
   ],
-  "咖啡/茶饮/其他": [
-    "CitySuper", "Lady M", "吃茶三千", "星巴克", "Pacific Coffee", "Coffee Master",
+  "咖啡/茶饮": [
+    "吃茶三千", "星巴克", "Pacific Coffee", "Coffee Master",
+  ],
+  "轻食/其他":  [
+    "CitySuper", "Lady M"
   ],
 };
 

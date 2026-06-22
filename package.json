@@ -2,7 +2,7 @@
   "name": "chi-shen-me",
   "version": "2.0.0",
   "private": true,
-  "description": "吃什么 — 餐厅/菜式双模式随机决策器，支持三主题切换+6分类+7天防重复",
+  "description": "吃什么 — 餐厅/菜式双模式随机决策器，支持三主题切换+7分类+7天防重复",
   "type": "module",
   "scripts": {
     "dev": "vite",

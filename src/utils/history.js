@@ -9,7 +9,7 @@ const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 
 /**
  * 添加一条决策记录
- * @param {string} category - 类别 (food|activity|reward|relationship)
+ * @param {string} category - 类别 (food|restaurant)
  * @param {string} value - 选中的值
  */
 export const record = (category, value) => {
@@ -52,4 +52,14 @@ export const getRecentValues = (category) => {
   return history
     .filter((h) => h.category === category && now - h.ts < MAX_AGE_MS)
     .map((h) => h.value);
+};
+
+/**
+ * 获取完整历史记录（7天内，按时间倒序）
+ * @returns {Array<{category: string, value: string, ts: number}>}
+ */
+export const getHistory = () => {
+  const history = load(HISTORY_KEY, []);
+  const now = Date.now();
+  return history.filter((h) => now - h.ts < MAX_AGE_MS).reverse();
 };

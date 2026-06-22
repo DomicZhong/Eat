@@ -3,13 +3,13 @@
  *
  * 特性:
  * - 按菜系分类Tab筛选 + 全部模式
- * - 从当前分类随机抽取
- * - 7天历史防重复提示
+ * - 从当前分类随机抽取，7天内自动排除已选
+ * - 7天历史防重复提示 + 历史记录查看
  * - 快速重抽（排除当前结果）
- * - 按分类增删改美食选项
+ * - 按分类增删改美食选项 + 一键恢复默认
  */
 import { CATEGORIES, getAllFoods, getFoodsByCategory, saveAllFoods, getAllRestaurants, getRestaurantsByCategory, saveAllRestaurants, randomPick } from "../utils/helpers.js";
-import { record, checkRecent } from "../utils/history.js";
+import { record, checkRecent, getRecentValues, getHistory } from "../utils/history.js";
 
 /** 当前选中的分类 */
 var selectedCategory = "全部";
@@ -250,7 +250,7 @@ var tabsHtml = function () {
     var tab = tabs[t];
     var isActive = tab === selectedCategory;
     var info = CATEGORIES[tab];
-    var label = info ? (info.emoji + " " + tab) : ("🍽️ " + tab);
+    var label = info ? (info.emoji + " " + tab) : ((mode === "restaurant" ? "📍 " : "🍽️ ") + tab);
     var accent = getAccent();
     var activeClass = isActive
       ? accent.bg + " text-white border-" + accent.name + "-" + accent.hex
@@ -308,7 +308,7 @@ var categoryBlockHtml = function (catName, items, blockMode) {
 };
 
 /**
- * 生成美食库编辑面板 HTML
+ * 生成美食库编辑面板 HTML（含恢复默认按钮）
  */
 var editPanelHtml = function (panelMode) {
   var isRest = panelMode === "restaurant";
@@ -318,6 +318,7 @@ var editPanelHtml = function (panelMode) {
   var expanded = isRest ? restListExpanded : listExpanded;
   var toggleId = isRest ? "decider-btn-toggle-rest-list" : "decider-btn-toggle-list";
   var listId = isRest ? "decider-rests-list" : "decider-foods-list";
+  var resetId = isRest ? "decider-btn-reset-rest" : "decider-btn-reset-food";
   var cats = Object.keys(CATEGORIES);
   var totalCount = 0;
   var blocks = [];
@@ -332,13 +333,65 @@ var editPanelHtml = function (panelMode) {
     '<div class="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">',
     '<div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">',
     '<span class="text-sm text-slate-400">' + panelIcon + " " + panelLabel + ' · ' + totalCount + " 项</span>",
+    '<div class="flex items-center gap-2">',
+    '<button id="' + resetId + '" class="text-xs text-rose-400 hover:text-rose-300 transition-colors">↺ 恢复默认</button>',
     '<button id="' + toggleId + '" class="text-xs text-slate-500 ' + getAccent().hoverText + ' transition-colors">' + (expanded ? "收起 ▴" : "查看全部 ▾") + "</button>",
-    "</div>",
+    "</div></div>",
     '<div id="' + listId + '" class="max-h-[60vh] overflow-y-auto' + (expanded ? "" : " hidden") + '">',
     blocks.join(""),
     "</div>",
     "</div>",
   ].join("");
+};
+
+/**
+ * 生成历史记录面板 HTML
+ */
+var historyPanelHtml = function () {
+  var records = getHistory();
+  if (records.length === 0) {
+    return '<div class="mt-4 rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">' +
+      '<div class="px-4 py-3 border-b border-slate-700">' +
+      '<span class="text-sm text-slate-400">📊 最近7天 · 暂无记录</span>' +
+      "</div></div>";
+  }
+
+  var rows = [];
+  for (var i = 0; i < Math.min(records.length, 14); i++) {
+    var h = records[i];
+    var d = new Date(h.ts);
+    var dateStr = (d.getMonth() + 1) + "/" + d.getDate() + " " +
+      String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    var isRest = h.category === "restaurant";
+    var icon = isRest ? "📍" : "🍽️";
+    rows.push(
+      '<div class="flex items-center gap-2 px-4 py-2 border-b border-slate-800 last:border-b-0">' +
+      '<span class="text-xs w-8 text-slate-600">' + (i + 1) + "</span>" +
+      '<span class="text-xs text-slate-500 w-20 flex-shrink-0">' + dateStr + "</span>" +
+      '<span class="text-xs text-slate-400 w-8 text-center">' + icon + "</span>" +
+      '<span class="flex-1 text-sm text-slate-300 truncate">' + escHtml(h.value) + "</span>" +
+      "</div>"
+    );
+  }
+
+  return '<div class="mt-4 rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">' +
+    '<div class="px-4 py-3 border-b border-slate-700">' +
+    '<span class="text-sm text-slate-400">📊 最近7天 · ' + records.length + " 条记录</span>" +
+    "</div>" +
+    '<div class="max-h-[40vh] overflow-y-auto">' +
+    rows.join("") +
+    "</div></div>";
+};
+
+/**
+ * 恢复默认数据
+ */
+var handleResetDefaults = function (resetMode) {
+  if (!confirm("确认恢复 " + (resetMode === "restaurant" ? "餐厅" : "美食") + " 默认数据？\n自定义数据将丢失。")) return;
+  var key = resetMode === "restaurant" ? "ustime_restaurants" : "ustime_foods";
+  localStorage.removeItem(key);
+  showImportMsg("✅ 已恢复默认" + (resetMode === "restaurant" ? "餐厅" : "美食") + "数据");
+  setTimeout(function () { refresh(); }, 400);
 };
 
 /**
@@ -400,6 +453,9 @@ var html = function () {
     // 编辑面板
     editPanelHtml(mode),
 
+    // 历史记录
+    historyPanelHtml(),
+
     // 数据导入导出
     '<div class="mt-6 pt-4 border-t border-slate-700">',
     '<div class="flex items-center justify-between">',
@@ -458,18 +514,30 @@ var switchCategory = function (cat) {
 };
 
 /**
- * 执行随机
+ * 执行随机（集成7天防重复 + "全部"模式显示所属分类）
  */
 var doRoll = function (exclude) {
   if (!exclude) exclude = [];
+  var isRest = mode === "restaurant";
   var items = getItemsByCategory(selectedCategory);
-  var candidates = items.filter(function (f) { return exclude.indexOf(f) === -1; });
+
+  // 合并7天内选过的值到排除列表
+  var recentVals = getRecentValues(isRest ? "restaurant" : "food");
+  var smartExclude = exclude.slice();
+  for (var r = 0; r < recentVals.length; r++) {
+    if (smartExclude.indexOf(recentVals[r]) === -1) smartExclude.push(recentVals[r]);
+  }
+
+  // 优先排除近期值，若全军覆没则仅排除手动指定的
+  var candidates = items.filter(function (f) { return smartExclude.indexOf(f) === -1; });
+  if (candidates.length === 0) {
+    candidates = items.filter(function (f) { return exclude.indexOf(f) === -1; });
+  }
   var pool = candidates.length > 0 ? candidates : items;
   var picked = randomPick(pool);
   if (!picked) return;
 
   currentResult = picked;
-  var isRest = mode === "restaurant";
   record(isRest ? "restaurant" : "food", picked);
 
   var main = document.getElementById("decider-result-text");
@@ -484,17 +552,35 @@ var doRoll = function (exclude) {
 
   // 显示分类标签
   var catEl = document.getElementById("decider-result-cat");
-  if (catEl && selectedCategory !== "全部") {
-    var info = CATEGORIES[selectedCategory];
-    catEl.textContent = (info ? info.emoji : "") + " " + selectedCategory;
-    catEl.classList.remove("hidden");
-  } else if (catEl) {
-    catEl.classList.add("hidden");
+  if (catEl) {
+    if (selectedCategory !== "全部") {
+      var info = CATEGORIES[selectedCategory];
+      catEl.textContent = (info ? info.emoji : "") + " " + selectedCategory;
+      catEl.classList.remove("hidden");
+    } else {
+      // "全部" 模式下查找结果所属分类
+      var allItems = getAllItems();
+      var cats = Object.keys(CATEGORIES);
+      var foundCat = "";
+      for (var ci = 0; ci < cats.length; ci++) {
+        if (allItems[cats[ci]] && allItems[cats[ci]].indexOf(picked) !== -1) {
+          foundCat = cats[ci];
+          break;
+        }
+      }
+      if (foundCat) {
+        var cinfo = CATEGORIES[foundCat];
+        catEl.textContent = (cinfo ? cinfo.emoji : "") + " " + foundCat;
+        catEl.classList.remove("hidden");
+      } else {
+        catEl.classList.add("hidden");
+      }
+    }
   }
 
   var hint = checkRecent(isRest ? "restaurant" : "food", picked);
   var hintEl = document.getElementById("decider-result-hint");
-  if (hintEl && hint.count > 1) {
+  if (hintEl && hint.count > 0) {
     hintEl.textContent = "最近 " + hint.lastDate + " 已选过，共 " + hint.count + " 次";
     hintEl.classList.remove("hidden");
   } else if (hintEl) {
@@ -550,7 +636,10 @@ var addItem = function (catName, value) {
  */
 var delItem = function (catName, idx) {
   var data = getAllItems();
-  if (!data[catName] || data[catName].length <= 1) return;
+  if (!data[catName] || data[catName].length <= 1) {
+    showImportMsg("⚠️ 最后一项不能删除，请先添加新项后再删");
+    return;
+  }
   data[catName].splice(idx, 1);
   saveAllItems(data);
   refresh();
@@ -729,6 +818,12 @@ var bindEvents = function () {
   };
   bindToggle("decider-btn-toggle-list", "decider-foods-list", "listExpanded");
   bindToggle("decider-btn-toggle-rest-list", "decider-rests-list", "restListExpanded");
+
+  // 恢复默认数据按钮
+  var btnResetFood = document.getElementById("decider-btn-reset-food");
+  var btnResetRest = document.getElementById("decider-btn-reset-rest");
+  if (btnResetFood) btnResetFood.addEventListener("click", function () { handleResetDefaults("food"); });
+  if (btnResetRest) btnResetRest.addEventListener("click", function () { handleResetDefaults("restaurant"); });
 
   // 分类添加输入的 Enter 键
   var inputs = document.querySelectorAll(".decider-add-input");
